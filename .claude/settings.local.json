@@ -9,7 +9,16 @@
       "Bash(rm -rf Pods Podfile.lock .symlinks)",
       "Bash(pod install:*)",
       "Bash(flutter run:*)",
-      "Bash(flutter pub:*)"
+      "Bash(flutter pub:*)",
+      "mcp__serena__find_symbol",
+      "Bash(gh repo:*)",
+      "Bash(gh issue:*)",
+      "Bash(gh auth:*)",
+      "Bash(open /Users/mac/personal/Daily_You/ios/Runner.xcworkspace)",
+      "Bash(gh label:*)",
+      "mcp__serena__list_dir",
+      "Bash(ls -la /Users/mac/personal/Daily_You/lib/pages/*.dart)",
+      "mcp__serena__read_memory"
     ]
   }
 }

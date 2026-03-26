@@ -1,0 +1,12 @@
+# Daily_You Project Overview
+- Purpose: Open-source Flutter journal app ("Daily You") for daily logs, mood tracking, photos, and offline-first personal diary usage.
+- Primary stack: Flutter + Dart (SDK >=3.0.0), with Flutter desktop/mobile platform folders (`android`, `ios`, `linux`, `macos`, `windows`) and integration testing.
+- Main entrypoint: `lib/main.dart`.
+- High-level structure:
+  - `lib/pages`, `lib/widgets`, `lib/layouts`: UI/presentation
+  - `lib/models`: data models
+  - `lib/providers`: state/app logic
+  - `lib/database`: persistence layer
+  - `lib/utils` and top-level utility services in `lib/`
+  - `integration_test/`: end-to-end test(s)
+- Packaging/release-related files: `build_release.sh`, `prepare_release.sh`, `fastlane/`, `AppImageBuilder.yml`.

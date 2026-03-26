@@ -1,0 +1,11 @@
+# Suggested Commands
+- Enter reproducible dev shell (if using Nix): `nix develop`
+- Install Flutter deps: `flutter pub get`
+- Run static analysis: `flutter analyze`
+- Format code: `dart format .`
+- Run all tests: `flutter test`
+- Run integration tests: `flutter test integration_test`
+- Run app locally: `flutter run`
+- Build Android release APKs (custom script): `./build_release.sh`
+- Prepare release metadata/versioning (custom script): `./prepare_release.sh <changelog-file>`
+- Typical Darwin utilities used in this repo: `git`, `ls`, `cd`, `rg`, `find`, `sed`.
