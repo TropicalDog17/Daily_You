@@ -4,6 +4,7 @@ import 'package:daily_you/main.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:timezone/timezone.dart' as tz;
 
 class NotificationManager {
   static final NotificationManager instance = NotificationManager._init();
@@ -32,9 +33,13 @@ class NotificationManager {
 
     _notifications = flutterLocalNotificationsPlugin;
 
-    await _notifications!.initialize(const InitializationSettings(
+    await _notifications!.initialize(
+      const InitializationSettings(
         android: AndroidInitializationSettings('@drawable/ic_notification'),
-        linux: LinuxInitializationSettings(defaultActionName: 'Log Today')));
+        iOS: DarwinInitializationSettings(),
+        linux: LinuxInitializationSettings(defaultActionName: 'Log Today'),
+      ),
+    );
   }
 
   Future<bool> hasNotificationPermission() async {
@@ -47,11 +52,21 @@ class NotificationManager {
       if (hasPermissions != null && hasPermissions) {
         return await requestAlarmPermission();
       }
+    } else if (Platform.isIOS) {
+      return await _notifications!
+              .resolvePlatformSpecificImplementation<
+                  IOSFlutterLocalNotificationsPlugin>()
+              ?.requestPermissions(alert: true, badge: true, sound: true) ??
+          false;
     }
     return false;
   }
 
   Future<bool> requestAlarmPermission() async {
+    if (!Platform.isAndroid) {
+      return true;
+    }
+
     DeviceInfoPlugin deviceInfoPlugin = DeviceInfoPlugin();
     AndroidDeviceInfo androidInfo = await deviceInfoPlugin.androidInfo;
 
@@ -81,11 +96,43 @@ class NotificationManager {
   }
 
   Future<void> stopDailyReminders() async {
-    await AndroidAlarmManager.cancel(0);
+    if (Platform.isAndroid) {
+      await AndroidAlarmManager.cancel(0);
+    } else if (Platform.isIOS) {
+      await _notifications!.cancel(0);
+    }
     await dismissReminderNotification();
   }
 
   Future<void> startScheduledDailyReminders() async {
-    setAlarm(firstSet: true);
+    if (Platform.isAndroid) {
+      setAlarm(firstSet: true);
+    } else if (Platform.isIOS) {
+      final scheduledTime = calculateReminderDateTime(firstSet: true);
+      await _scheduleIOSNotification(scheduledTime);
+    }
+  }
+
+  Future<void> scheduleIOSNotification(DateTime scheduledTime) async {
+    if (!Platform.isIOS) {
+      return;
+    }
+    await _scheduleIOSNotification(scheduledTime);
+  }
+
+  Future<void> _scheduleIOSNotification(DateTime scheduledTime) async {
+    final notificationTitle = 'Log Today!';
+    const notificationDescription = 'Your daily reminder is ready.';
+
+    await _notifications!.zonedSchedule(
+      0,
+      notificationTitle,
+      notificationDescription,
+      tz.TZDateTime.from(scheduledTime, tz.local),
+      const NotificationDetails(iOS: DarwinNotificationDetails()),
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      matchDateTimeComponents: DateTimeComponents.time,
+      payload: scheduledTime.toIso8601String(),
+    );
   }
 }

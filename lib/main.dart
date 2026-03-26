@@ -24,6 +24,8 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:statsfl/statsfl.dart';
 import 'package:time_range_picker/time_range_picker.dart';
 import 'package:provider/provider.dart';
+import 'package:timezone/data/latest.dart' as tz_data;
+import 'package:timezone/timezone.dart' as tz;
 
 @pragma('vm:entry-point')
 void callbackDispatcher() async {
@@ -36,10 +38,11 @@ void callbackDispatcher() async {
         FlutterLocalNotificationsPlugin();
 
     await flutterLocalNotificationsPlugin.initialize(
-        const InitializationSettings(
-            android: AndroidInitializationSettings('@drawable/ic_notification'),
-            linux:
-                LinuxInitializationSettings(defaultActionName: 'Log Today')));
+      const InitializationSettings(
+        android: AndroidInitializationSettings('@drawable/ic_notification'),
+        linux: LinuxInitializationSettings(defaultActionName: 'Log Today'),
+      ),
+    );
 
     // Localized notification text is stored in SharedPreferences upon startup
     var prefs = await SharedPreferences.getInstance();
@@ -60,8 +63,12 @@ void callbackDispatcher() async {
 
     if (title != null && description != null) {
       await flutterLocalNotificationsPlugin.show(
-          0, title, description, platformChannelSpecifics,
-          payload: DateTime.now().toIso8601String());
+        0,
+        title,
+        description,
+        platformChannelSpecifics,
+        payload: DateTime.now().toIso8601String(),
+      );
     }
   }
   AppDatabase.instance.close();
@@ -85,42 +92,71 @@ void main() async {
   // Get current device info
   await DeviceInfoService().init();
 
-  // Notification only supported on android
+  if (Platform.isIOS) {
+    tz_data.initializeTimeZones();
+    tz.TZDateTime.now(tz.local);
+  }
+
+  if (Platform.isAndroid || Platform.isIOS) {
+    await NotificationManager.instance.init();
+  }
+
   if (Platform.isAndroid) {
     await FlutterDisplayMode.setHighRefreshRate();
-    await NotificationManager.instance.init();
-
     await AndroidAlarmManager.initialize();
   }
 
-  runApp(MultiProvider(providers: [
-    ChangeNotifierProvider<ThemeModeProvider>(
-      create: (_) => themeProvider,
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider<ThemeModeProvider>(create: (_) => themeProvider),
+        ChangeNotifierProvider<EntriesProvider>(
+          create: (_) => EntriesProvider.instance,
+        ),
+        ChangeNotifierProvider<EntryImagesProvider>(
+          create: (_) => EntryImagesProvider.instance,
+        ),
+        ChangeNotifierProvider<TemplatesProvider>(
+          create: (_) => TemplatesProvider.instance,
+        ),
+        ChangeNotifierProvider<ConfigProvider>(
+          create: (_) => ConfigProvider.instance,
+        ),
+      ],
+      builder: (context, child) => const MainApp(),
     ),
-    ChangeNotifierProvider<EntriesProvider>(
-      create: (_) => EntriesProvider.instance,
-    ),
-    ChangeNotifierProvider<EntryImagesProvider>(
-      create: (_) => EntryImagesProvider.instance,
-    ),
-    ChangeNotifierProvider<TemplatesProvider>(
-      create: (_) => TemplatesProvider.instance,
-    ),
-    ChangeNotifierProvider<ConfigProvider>(
-      create: (_) => ConfigProvider.instance,
-    )
-  ], builder: (context, child) => const MainApp()));
+  );
 }
 
 Future<void> setAlarm({bool firstSet = false}) async {
+  final reminderDateTime = calculateReminderDateTime(firstSet: firstSet);
+
+  if (Platform.isAndroid) {
+    await AndroidAlarmManager.oneShotAt(
+      reminderDateTime,
+      0,
+      callbackDispatcher,
+      allowWhileIdle: true,
+      exact: true,
+      rescheduleOnReboot: true,
+    );
+  } else if (Platform.isIOS) {
+    await NotificationManager.instance.scheduleIOSNotification(
+      reminderDateTime,
+    );
+  }
+}
+
+DateTime calculateReminderDateTime({bool firstSet = false}) {
   DateTime referenceTime = TimeManager.startOfDay(DateTime.now());
   Duration currentTime = DateTime.now().difference(referenceTime);
 
   Duration reminderTime;
   if (ConfigProvider.instance.get(ConfigKey.setReminderTime)) {
     reminderTime = TimeManager.addTimeOfDay(
-            referenceTime, TimeManager.scheduledReminderTime())
-        .difference(referenceTime);
+      referenceTime,
+      TimeManager.scheduledReminderTime(),
+    ).difference(referenceTime);
     if (!firstSet || reminderTime <= currentTime) {
       reminderTime += Duration(days: 1);
     }
@@ -128,12 +164,14 @@ Future<void> setAlarm({bool firstSet = false}) async {
     final random = Random();
     TimeRange timeRange = TimeManager.getReminderTimeRange();
 
-    Duration startTime =
-        TimeManager.addTimeOfDay(referenceTime, timeRange.startTime)
-            .difference(referenceTime);
-    Duration endTime =
-        TimeManager.addTimeOfDay(referenceTime, timeRange.endTime)
-            .difference(referenceTime);
+    Duration startTime = TimeManager.addTimeOfDay(
+      referenceTime,
+      timeRange.startTime,
+    ).difference(referenceTime);
+    Duration endTime = TimeManager.addTimeOfDay(
+      referenceTime,
+      timeRange.endTime,
+    ).difference(referenceTime);
 
     if (endTime < startTime) {
       // Extend end time to next day
@@ -145,8 +183,9 @@ Future<void> setAlarm({bool firstSet = false}) async {
       startTime = currentTime;
     }
 
-    int randomTimeInMinutes =
-        random.nextInt(endTime.inMinutes - startTime.inMinutes + 1);
+    int randomTimeInMinutes = random.nextInt(
+      endTime.inMinutes - startTime.inMinutes + 1,
+    );
     reminderTime = startTime + Duration(minutes: randomTimeInMinutes);
 
     if (!firstSet || (reminderTime <= currentTime)) {
@@ -154,10 +193,7 @@ Future<void> setAlarm({bool firstSet = false}) async {
     }
   }
 
-  DateTime reminderDateTime = DateTime.now().add(reminderTime - currentTime);
-
-  await AndroidAlarmManager.oneShotAt(reminderDateTime, 0, callbackDispatcher,
-      allowWhileIdle: true, exact: true, rescheduleOnReboot: true);
+  return DateTime.now().add(reminderTime - currentTime);
 }
 
 class MainApp extends StatefulWidget {
@@ -181,73 +217,78 @@ class _MainAppState extends State<MainApp> {
     return StatsFl(
       isEnabled: false,
       child: GestureDetector(
-          onTap: () {
-            FocusManager.instance.primaryFocus?.unfocus();
+        onTap: () {
+          FocusManager.instance.primaryFocus?.unfocus();
+        },
+        child: MaterialApp(
+          onGenerateTitle: (context) => AppLocalizations.of(context)!.appTitle,
+          title: 'Daily You',
+          themeMode: themeModeProvider.themeMode,
+          debugShowCheckedModeBanner: false,
+          localizationsDelegates: <LocalizationsDelegate<dynamic>>[
+            AppLocalizations.delegate,
+            CustomMaterialLocalizationsDelegate(),
+            CustomCupertinoLocalizationsDelegate(),
+            CustomWidgetsLocalizationsDelegate(),
+          ],
+          locale: configProvider.getOverrideLanguage(),
+          supportedLocales: [
+            Locale("en"),
+            ...AppLocalizations.supportedLocales.where(
+              (locale) => locale.languageCode != "en",
+            ),
+          ],
+          localeResolutionCallback: (locale, supportedLocales) {
+            return configProvider.getOverrideLanguage();
           },
-          child: MaterialApp(
-              onGenerateTitle: (context) =>
-                  AppLocalizations.of(context)!.appTitle,
-              title: 'Daily You',
-              themeMode: themeModeProvider.themeMode,
-              debugShowCheckedModeBanner: false,
-              localizationsDelegates: <LocalizationsDelegate<dynamic>>[
-                AppLocalizations.delegate,
-                CustomMaterialLocalizationsDelegate(),
-                CustomCupertinoLocalizationsDelegate(),
-                CustomWidgetsLocalizationsDelegate(),
-              ],
-              locale: configProvider.getOverrideLanguage(),
-              supportedLocales: [
-                Locale("en"),
-                ...AppLocalizations.supportedLocales
-                    .where((locale) => locale.languageCode != "en")
-              ],
-              localeResolutionCallback: (locale, supportedLocales) {
-                return configProvider.getOverrideLanguage();
-              },
-              theme: ThemeData(
-                useMaterial3: true,
-                colorScheme: ColorScheme.fromSeed(
+          theme: ThemeData(
+            useMaterial3: true,
+            colorScheme: ColorScheme.fromSeed(
+              seedColor: themeModeProvider.accentColor,
+              brightness: Brightness.light,
+            ),
+          ),
+          darkTheme: (ConfigProvider.instance.get(ConfigKey.theme) == 'amoled')
+              ? ThemeData(
+                  useMaterial3: true,
+                  colorScheme: ColorScheme.fromSeed(
                     seedColor: themeModeProvider.accentColor,
-                    brightness: Brightness.light),
-              ),
-              darkTheme:
-                  (ConfigProvider.instance.get(ConfigKey.theme) == 'amoled')
-                      ? ThemeData(
-                          useMaterial3: true,
-                          colorScheme: ColorScheme.fromSeed(
-                            seedColor: themeModeProvider.accentColor,
-                            brightness: Brightness.dark,
-                            surfaceContainerLowest: Colors.black,
-                            surfaceContainerLow: Colors.black,
-                            surfaceContainerHighest: Colors.black,
-                            surfaceContainerHigh: Colors.black,
-                            surfaceBright: Colors.black,
-                            surfaceDim: Colors.black,
-                            surface: Colors.black,
-                            surfaceContainer: Colors.black,
-                            onSurface: Colors.white,
-                            surfaceTint: Colors.black,
-                            primaryContainer: Colors.black,
-                            secondaryContainer: Colors.black,
-                            tertiaryContainer: Colors.black,
-                            inverseSurface: Colors.black,
-                            inversePrimary: Colors.black,
-                            scrim: Colors.black,
-                          ),
-                          scaffoldBackgroundColor: Colors.black)
-                      : ThemeData(
-                          useMaterial3: true,
-                          colorScheme: ColorScheme.fromSeed(
-                              seedColor: themeModeProvider.accentColor,
-                              brightness: Brightness.dark),
-                        ),
-              home: LaunchPage(
-                  nextPage: ResponsiveLayout(
-                mobileScaffold: MobileScaffold(),
-                tabletScaffold: MobileScaffold(),
-                desktopScaffold: MobileScaffold(),
-              )))),
+                    brightness: Brightness.dark,
+                    surfaceContainerLowest: Colors.black,
+                    surfaceContainerLow: Colors.black,
+                    surfaceContainerHighest: Colors.black,
+                    surfaceContainerHigh: Colors.black,
+                    surfaceBright: Colors.black,
+                    surfaceDim: Colors.black,
+                    surface: Colors.black,
+                    surfaceContainer: Colors.black,
+                    onSurface: Colors.white,
+                    surfaceTint: Colors.black,
+                    primaryContainer: Colors.black,
+                    secondaryContainer: Colors.black,
+                    tertiaryContainer: Colors.black,
+                    inverseSurface: Colors.black,
+                    inversePrimary: Colors.black,
+                    scrim: Colors.black,
+                  ),
+                  scaffoldBackgroundColor: Colors.black,
+                )
+              : ThemeData(
+                  useMaterial3: true,
+                  colorScheme: ColorScheme.fromSeed(
+                    seedColor: themeModeProvider.accentColor,
+                    brightness: Brightness.dark,
+                  ),
+                ),
+          home: LaunchPage(
+            nextPage: ResponsiveLayout(
+              mobileScaffold: MobileScaffold(),
+              tabletScaffold: MobileScaffold(),
+              desktopScaffold: MobileScaffold(),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

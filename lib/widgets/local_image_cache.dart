@@ -32,20 +32,21 @@ class LocalImageCache {
   final CacheManager _diskCache;
   String? tempImgFolderPath;
   final _pending = <String>{};
-  final FileBytesCache imageCache =
-      FileBytesCache(maxCacheSize: 10 * 1024 * 1024);
+  final FileBytesCache imageCache = FileBytesCache(
+    maxCacheSize: 10 * 1024 * 1024,
+  );
   final Pool imgFetchPool = Pool(5);
 
   SendPort? _resizeSendPort;
 
   LocalImageCache._internal()
-      : _diskCache = CacheManager(
-          Config(
-            'resizedImages',
-            stalePeriod: const Duration(days: 7),
-            maxNrOfCacheObjects: 2000,
-          ),
-        ) {
+    : _diskCache = CacheManager(
+        Config(
+          'resizedImages',
+          stalePeriod: const Duration(days: 7),
+          maxNrOfCacheObjects: 2000,
+        ),
+      ) {
     _initResizeIsolate();
   }
 
@@ -60,7 +61,7 @@ class LocalImageCache {
       "token": isolateToken,
       "port": responsePort.sendPort,
       "imgFolderPath": imgFolderPath,
-      "tempImgFolderPath": tempImgFolderPath
+      "tempImgFolderPath": tempImgFolderPath,
     });
   }
 
@@ -69,14 +70,20 @@ class LocalImageCache {
       _resizeSendPort = message;
     } else if (message is ResizeResponse) {
       final key = message.key;
-      final bytes = await FileLayer.getFileBytes(tempImgFolderPath!,
-          name: "$key.jpg", useExternalPath: false);
+      final bytes = await FileLayer.getFileBytes(
+        tempImgFolderPath!,
+        name: "$key.jpg",
+        useExternalPath: false,
+      );
 
       if (bytes != null) {
         imageCache.put(key, bytes);
         await _diskCache.putFile(key, bytes, fileExtension: 'jpg');
-        await FileLayer.deleteFile(tempImgFolderPath!,
-            name: "$key.jpg", useExternalPath: false);
+        await FileLayer.deleteFile(
+          tempImgFolderPath!,
+          name: "$key.jpg",
+          useExternalPath: false,
+        );
       }
 
       _pending.remove(key);
@@ -98,7 +105,9 @@ class LocalImageCache {
   }
 
   Future<Uint8List?> getResizedImageBytes(
-      String originalPath, int width) async {
+    String originalPath,
+    int width,
+  ) async {
     // Skip GIFs
     if (extension(originalPath).toLowerCase() == ".gif") {
       return await ImageStorage.instance.getBytes(originalPath);
@@ -113,8 +122,9 @@ class LocalImageCache {
     }
 
     // Disk cache
-    final fileInfo =
-        await imgFetchPool.withResource(() => _diskCache.getFileFromCache(key));
+    final fileInfo = await imgFetchPool.withResource(
+      () => _diskCache.getFileFromCache(key),
+    );
     if (fileInfo != null) {
       final bytes = await fileInfo.file.readAsBytes();
       imageCache.put(key, bytes);
@@ -148,13 +158,14 @@ void imageResizerIsolate(Map<String, dynamic> args) async {
         final originalPath = message.originalPath;
         final width = message.width;
 
-        if (Platform.isAndroid) {
+        if (Platform.isAndroid || Platform.isIOS) {
           await FlutterImageCompress.compressAndGetFile(
-              join(imgFolderPath, originalPath),
-              join(tempImgFolderPath, "$key.jpg"),
-              quality: 85,
-              minWidth: width,
-              minHeight: width);
+            join(imgFolderPath, originalPath),
+            join(tempImgFolderPath, "$key.jpg"),
+            quality: 85,
+            minWidth: width,
+            minHeight: width,
+          );
         } else {
           final cmd = img.Command()
             ..decodeJpgFile(join(imgFolderPath, originalPath))

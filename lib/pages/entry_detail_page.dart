@@ -23,8 +23,11 @@ class EntryDetailPage extends StatefulWidget {
   final int index;
   final bool filtered;
 
-  const EntryDetailPage(
-      {super.key, required this.index, required this.filtered});
+  const EntryDetailPage({
+    super.key,
+    required this.index,
+    required this.filtered,
+  });
 
   @override
   State<EntryDetailPage> createState() => _EntryDetailPageState();
@@ -63,123 +66,124 @@ class _EntryDetailPageState extends State<EntryDetailPage> {
     }
 
     return Scaffold(
-        appBar: AppBar(
-          actions: [
-            shareButton(context, entries),
-            editButton(context, entries)
-          ],
-        ),
-        body: PageView.builder(
-            hitTestBehavior: HitTestBehavior.translucent,
-            controller: _pageController,
-            physics: FastPageViewScrollPhysics(),
-            reverse: true,
-            itemCount: entries.length,
-            onPageChanged: (int newIndex) {
-              _currentPageNotifier.value = newIndex;
-            },
-            itemBuilder: (context, index) {
-              return EntryDetails(entries: entries, index: index);
-            }));
+      appBar: AppBar(
+        actions: [shareButton(context, entries), editButton(context, entries)],
+      ),
+      body: PageView.builder(
+        hitTestBehavior: HitTestBehavior.translucent,
+        controller: _pageController,
+        physics: FastPageViewScrollPhysics(),
+        reverse: true,
+        itemCount: entries.length,
+        onPageChanged: (int newIndex) {
+          _currentPageNotifier.value = newIndex;
+        },
+        itemBuilder: (context, index) {
+          return EntryDetails(entries: entries, index: index);
+        },
+      ),
+    );
   }
 
   Widget editButton(BuildContext context, List<Entry> entries) {
     return ValueListenableBuilder(
-        valueListenable: _currentPageNotifier,
-        builder: (context, currentIndex, child) {
-          final entriesProvider = Provider.of<EntriesProvider>(context);
-          final entryImagesProvider = Provider.of<EntryImagesProvider>(context);
+      valueListenable: _currentPageNotifier,
+      builder: (context, currentIndex, child) {
+        final entriesProvider = Provider.of<EntriesProvider>(context);
+        final entryImagesProvider = Provider.of<EntryImagesProvider>(context);
 
-          var entry = entries[currentIndex];
-          var images = entryImagesProvider.getForEntry(entry);
+        var entry = entries[currentIndex];
+        var images = entryImagesProvider.getForEntry(entry);
 
-          return IconButton(
-              icon: const Icon(Icons.edit_rounded),
-              onPressed: () async {
-                final editedEntryId = entry.id;
-                await Navigator.of(context).push(PageRouteBuilder(
-                  allowSnapshotting: false,
-                  fullscreenDialog: true,
-                  pageBuilder: (context, _, __) =>
-                      AddEditEntryPage(entry: entry, images: images),
-                  transitionsBuilder:
-                      (context, animation, secondaryAnimation, child) {
-                    return FadeTransition(
-                      opacity: animation,
-                      child: child,
-                    );
-                  },
-                  transitionDuration: const Duration(milliseconds: 200),
-                ));
+        return IconButton(
+          icon: const Icon(Icons.edit_rounded),
+          onPressed: () async {
+            final editedEntryId = entry.id;
+            await Navigator.of(context).push(
+              PageRouteBuilder(
+                allowSnapshotting: false,
+                fullscreenDialog: true,
+                pageBuilder: (context, _, __) =>
+                    AddEditEntryPage(entry: entry, images: images),
+                transitionsBuilder:
+                    (context, animation, secondaryAnimation, child) {
+                      return FadeTransition(opacity: animation, child: child);
+                    },
+                transitionDuration: const Duration(milliseconds: 200),
+              ),
+            );
 
-                // Get the new list of entries since the date of the edited entry
-                // may have changed.
-                var updatedEntries = widget.filtered
-                    ? entriesProvider.getFilteredEntries()
-                    : entriesProvider.entries;
+            // Get the new list of entries since the date of the edited entry
+            // may have changed.
+            var updatedEntries = widget.filtered
+                ? entriesProvider.getFilteredEntries()
+                : entriesProvider.entries;
 
-                // Find new index of the same entry by ID
-                final newIndex =
-                    updatedEntries.indexWhere((e) => e.id == editedEntryId);
+            // Find new index of the same entry by ID
+            final newIndex = updatedEntries.indexWhere(
+              (e) => e.id == editedEntryId,
+            );
 
-                // Jump to the new index if found
-                if (newIndex != -1 && mounted) {
-                  _pageController.jumpToPage(newIndex);
-                  _currentPageNotifier.value = newIndex;
-                }
-              });
-        });
+            // Jump to the new index if found
+            if (newIndex != -1 && mounted) {
+              _pageController.jumpToPage(newIndex);
+              _currentPageNotifier.value = newIndex;
+            }
+          },
+        );
+      },
+    );
   }
 
   Widget shareButton(BuildContext context, List<Entry> entries) {
     return ValueListenableBuilder(
-        valueListenable: _currentPageNotifier,
-        builder: (context, currentIndex, child) {
-          final entryImagesProvider = Provider.of<EntryImagesProvider>(context);
+      valueListenable: _currentPageNotifier,
+      builder: (context, currentIndex, child) {
+        final entryImagesProvider = Provider.of<EntryImagesProvider>(context);
 
-          var entry = entries[currentIndex];
-          var images = entryImagesProvider.getForEntry(entry);
+        var entry = entries[currentIndex];
+        var images = entryImagesProvider.getForEntry(entry);
 
-          if (Platform.isAndroid &&
-              (images.isNotEmpty || entry.text.isNotEmpty)) {
-            return IconButton(
-                icon: const Icon(Icons.share_rounded),
-                onPressed: () async {
-                  String sharedText = "";
-                  if (entry.mood != null) {
-                    sharedText = "${MoodIcon.getMoodIcon(entry.mood)} ";
-                  }
-                  sharedText =
-                      "$sharedText${DateFormat.yMMMEd(TimeManager.currentLocale(context)).format(entry.timeCreate)}\n${entry.text}";
+        if ((Platform.isAndroid || Platform.isIOS) &&
+            (images.isNotEmpty || entry.text.isNotEmpty)) {
+          return IconButton(
+            icon: const Icon(Icons.share_rounded),
+            onPressed: () async {
+              String sharedText = "";
+              if (entry.mood != null) {
+                sharedText = "${MoodIcon.getMoodIcon(entry.mood)} ";
+              }
+              sharedText =
+                  "$sharedText${DateFormat.yMMMEd(TimeManager.currentLocale(context)).format(entry.timeCreate)}\n${entry.text}";
 
-                  if (images.isNotEmpty) {
-                    // Share Image
-                    var bytes = await ImageStorage.instance
-                        .getBytes(images.first.imgPath);
-                    if (bytes != null) {
-                      await Share.shareXFiles(
-                          [XFile.fromData(bytes, mimeType: "images/*")],
-                          fileNameOverrides: [images.first.imgPath],
-                          text: sharedText);
-                    }
-                  } else {
-                    // Share text
-                    Share.share(sharedText);
-                  }
-                });
-          }
+              if (images.isNotEmpty) {
+                // Share Image
+                var bytes = await ImageStorage.instance.getBytes(
+                  images.first.imgPath,
+                );
+                if (bytes != null) {
+                  await Share.shareXFiles(
+                    [XFile.fromData(bytes, mimeType: "images/*")],
+                    fileNameOverrides: [images.first.imgPath],
+                    text: sharedText,
+                  );
+                }
+              } else {
+                // Share text
+                Share.share(sharedText);
+              }
+            },
+          );
+        }
 
-          return Container();
-        });
+        return Container();
+      },
+    );
   }
 }
 
 class EntryDetails extends StatelessWidget {
-  const EntryDetails({
-    super.key,
-    required this.index,
-    required this.entries,
-  });
+  const EntryDetails({super.key, required this.index, required this.entries});
 
   final int index;
   final List<Entry> entries;
@@ -207,55 +211,65 @@ class EntryDetails extends StatelessWidget {
                     height: 220,
                     width: 220,
                     child: Card.filled(
-                        clipBehavior: Clip.antiAlias,
-                        child:
-                            LocalImageLoader(imagePath: images.first.imgPath)),
+                      clipBehavior: Clip.antiAlias,
+                      child: LocalImageLoader(imagePath: images.first.imgPath),
+                    ),
                   ),
                 ),
                 onTap: () async {
-                  await Navigator.of(context).push(MaterialPageRoute(
-                    allowSnapshotting: false,
-                    fullscreenDialog: true,
-                    builder: (context) => ImageViewPage(
-                      images: images,
-                      index: 0,
+                  await Navigator.of(context).push(
+                    MaterialPageRoute(
+                      allowSnapshotting: false,
+                      fullscreenDialog: true,
+                      builder: (context) =>
+                          ImageViewPage(images: images, index: 0),
                     ),
-                  ));
+                  );
                 },
               ),
             Card.filled(
               color: Theme.of(context).colorScheme.surfaceContainer,
               child: Padding(
-                padding:
-                    const EdgeInsets.only(left: 8, top: 4, bottom: 4, right: 8),
+                padding: const EdgeInsets.only(
+                  left: 8,
+                  top: 4,
+                  bottom: 4,
+                  right: 8,
+                ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      DateFormat.yMMMEd(TimeManager.currentLocale(context))
-                          .format(entry.timeCreate),
+                      DateFormat.yMMMEd(
+                        TimeManager.currentLocale(context),
+                      ).format(entry.timeCreate),
                       style: const TextStyle(fontSize: 16),
                     ),
-                    MoodIcon(
-                      moodValue: entry.mood,
-                      size: 24,
-                    ),
+                    MoodIcon(moodValue: entry.mood, size: 24),
                   ],
                 ),
               ),
             ),
             if (entry.text.isNotEmpty)
               Card.filled(
-                  color: Theme.of(context).colorScheme.surfaceContainer,
-                  child: Padding(
-                      padding: const EdgeInsets.only(
-                          left: 8, top: 4, bottom: 4, right: 8),
-                      child: ScaledMarkdown(
-                        data: entry.text,
-                      ))),
+                color: Theme.of(context).colorScheme.surfaceContainer,
+                child: Padding(
+                  padding: const EdgeInsets.only(
+                    left: 8,
+                    top: 4,
+                    bottom: 4,
+                    right: 8,
+                  ),
+                  child: ScaledMarkdown(data: entry.text),
+                ),
+              ),
             Padding(
-              padding:
-                  const EdgeInsets.only(left: 8, top: 4, bottom: 4, right: 8),
+              padding: const EdgeInsets.only(
+                left: 8,
+                top: 4,
+                bottom: 4,
+                right: 8,
+              ),
               child: Text(
                 "${AppLocalizations.of(context)!.lastModified}: ${DateFormat.yMMMEd(TimeManager.currentLocale(context)).format(entry.timeModified)} ${DateFormat.jm(TimeManager.currentLocale(context)).format(entry.timeModified)}",
                 style: TextStyle(fontSize: 12, color: theme.disabledColor),
@@ -291,20 +305,24 @@ class EntryDetails extends StatelessWidget {
                             height: imageSize,
                             width: imageSize,
                             child: Card.filled(
-                                clipBehavior: Clip.antiAlias,
-                                child:
-                                    LocalImageLoader(imagePath: image.imgPath)),
+                              clipBehavior: Clip.antiAlias,
+                              child: LocalImageLoader(imagePath: image.imgPath),
+                            ),
                           ),
                         ),
                         onTap: () async {
-                          await Navigator.of(context).push(MaterialPageRoute(
-                            allowSnapshotting: false,
-                            fullscreenDialog: true,
-                            builder: (context) => ImageViewPage(
-                              images: images,
-                              index: images.indexWhere((x) => x.id == image.id),
+                          await Navigator.of(context).push(
+                            MaterialPageRoute(
+                              allowSnapshotting: false,
+                              fullscreenDialog: true,
+                              builder: (context) => ImageViewPage(
+                                images: images,
+                                index: images.indexWhere(
+                                  (x) => x.id == image.id,
+                                ),
+                              ),
                             ),
-                          ));
+                          );
                         },
                       ),
                     ),
@@ -318,32 +336,33 @@ class EntryDetails extends StatelessWidget {
         return SizedBox(
           height: imageSize,
           child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              itemCount: images.length,
-              itemBuilder: (context, index) {
-                return GestureDetector(
-                  child: Center(
-                    child: SizedBox(
-                      height: imageSize,
-                      width: imageSize,
-                      child: Card.filled(
-                          clipBehavior: Clip.antiAlias,
-                          child: LocalImageLoader(
-                              imagePath: images[index].imgPath)),
+            scrollDirection: Axis.horizontal,
+            itemCount: images.length,
+            itemBuilder: (context, index) {
+              return GestureDetector(
+                child: Center(
+                  child: SizedBox(
+                    height: imageSize,
+                    width: imageSize,
+                    child: Card.filled(
+                      clipBehavior: Clip.antiAlias,
+                      child: LocalImageLoader(imagePath: images[index].imgPath),
                     ),
                   ),
-                  onTap: () async {
-                    await Navigator.of(context).push(MaterialPageRoute(
+                ),
+                onTap: () async {
+                  await Navigator.of(context).push(
+                    MaterialPageRoute(
                       allowSnapshotting: false,
                       fullscreenDialog: true,
-                      builder: (context) => ImageViewPage(
-                        images: images,
-                        index: index,
-                      ),
-                    ));
-                  },
-                );
-              }),
+                      builder: (context) =>
+                          ImageViewPage(images: images, index: index),
+                    ),
+                  );
+                },
+              );
+            },
+          ),
         );
       },
     );

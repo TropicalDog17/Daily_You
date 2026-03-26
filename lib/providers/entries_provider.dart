@@ -132,7 +132,7 @@ class EntriesProvider with ChangeNotifier {
       timeModified: DateTime.now(),
     );
 
-    if (Platform.isAndroid &&
+    if ((Platform.isAndroid || Platform.isIOS) &&
         TimeManager.isSameDay(DateTime.now(), newEntry.timeCreate)) {
       await NotificationManager.instance.dismissReminderNotification();
     }
@@ -177,8 +177,10 @@ class EntriesProvider with ChangeNotifier {
     // Make a copy of the entries list
     if (_searchText.isNotEmpty) {
       filteredEntries = entries
-          .where((entry) =>
-              entry.text.toLowerCase().contains(_searchText.toLowerCase()))
+          .where(
+            (entry) =>
+                entry.text.toLowerCase().contains(_searchText.toLowerCase()),
+          )
           .toList();
     } else {
       filteredEntries = entries.toList();
@@ -238,8 +240,11 @@ class EntriesProvider with ChangeNotifier {
     if (filterMonthCount > 0) {
       filteredEntries = filteredEntries.where((entry) {
         DateTime now = DateTime.now();
-        DateTime monthsAgo =
-            DateTime(now.year, now.month - filterMonthCount, now.day);
+        DateTime monthsAgo = DateTime(
+          now.year,
+          now.month - filterMonthCount,
+          now.day,
+        );
         return entry.timeCreate.isAfter(monthsAgo);
       }).toList();
     }
@@ -264,22 +269,23 @@ class EntriesProvider with ChangeNotifier {
       if (entry.mood != null && mostRecentBadDay) {
         if (entry.mood! < 0) {
           mostRecentBadDay = false;
-          daysSinceBadDay = TimeManager.startOfDay(DateTime.now())
-              .difference(TimeManager.startOfDay(entry.timeCreate))
-              .inDays;
+          daysSinceBadDay = TimeManager.startOfDay(
+            DateTime.now(),
+          ).difference(TimeManager.startOfDay(entry.timeCreate)).inDays;
         }
       }
 
       // Increment current streak
       if (prevEntry != null &&
-          TimeManager.startOfDay(prevEntry.timeCreate)
-                  .difference(TimeManager.startOfDay(entry.timeCreate))
-                  .inDays >
+          TimeManager.startOfDay(
+                prevEntry.timeCreate,
+              ).difference(TimeManager.startOfDay(entry.timeCreate)).inDays >
               1) {
         if (isFirstStreak &&
             TimeManager.startOfDay(DateTime.now())
                     .difference(
-                        TimeManager.startOfDay(entries.first.timeCreate))
+                      TimeManager.startOfDay(entries.first.timeCreate),
+                    )
                     .inDays <=
                 1) {
           currentStreak = activeStreak;
@@ -321,7 +327,7 @@ class EntriesProvider with ChangeNotifier {
   void _calculateEntriesByDay() {
     _entriesByDay = {
       for (final e in entries)
-        DateTime(e.timeCreate.year, e.timeCreate.month, e.timeCreate.day): e
+        DateTime(e.timeCreate.year, e.timeCreate.month, e.timeCreate.day): e,
     };
   }
 

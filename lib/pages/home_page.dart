@@ -52,12 +52,19 @@ class _HomePageState extends State<HomePage>
   }
 
   Future<void> addOrEditTodayEntry(
-      Entry? todayEntry, List<EntryImage> todayImages, bool openCamera) async {
+    Entry? todayEntry,
+    List<EntryImage> todayImages,
+    bool openCamera,
+  ) async {
     await Navigator.of(context).push(
       MaterialPageRoute(
-          allowSnapshotting: false,
-          builder: (context) => AddEditEntryPage(
-              entry: todayEntry, openCamera: openCamera, images: todayImages)),
+        allowSnapshotting: false,
+        builder: (context) => AddEditEntryPage(
+          entry: todayEntry,
+          openCamera: openCamera,
+          images: todayImages,
+        ),
+      ),
     );
   }
 
@@ -77,7 +84,7 @@ class _HomePageState extends State<HomePage>
   Future _checkForNotificationLaunch() async {
     if (firstLoad) {
       firstLoad = false;
-      if (Platform.isAndroid) {
+      if (Platform.isAndroid || Platform.isIOS) {
         var launchDetails = await NotificationManager.instance.notifications
             .getNotificationAppLaunchDetails();
 
@@ -85,8 +92,10 @@ class _HomePageState extends State<HomePage>
             launchDetails?.notificationResponse?.id == 0) {
           NotificationManager.instance.justLaunched = false;
 
-          DateTime targetDate = DateTime.tryParse(
-                  launchDetails?.notificationResponse?.payload ?? "") ??
+          DateTime targetDate =
+              DateTime.tryParse(
+                launchDetails?.notificationResponse?.payload ?? "",
+              ) ??
               DateTime.now();
           Entry? entry = EntriesProvider.instance.getEntryForDate(targetDate);
           List<EntryImage> entryImages = entry != null
@@ -95,15 +104,16 @@ class _HomePageState extends State<HomePage>
 
           await Navigator.of(context).push(
             MaterialPageRoute(
-                allowSnapshotting: false,
-                builder: (context) => AddEditEntryPage(
-                      entry: entry,
-                      openCamera: false,
-                      images: entryImages,
-                      overrideCreateDate: TimeManager.isToday(targetDate)
-                          ? DateTime.now()
-                          : TimeManager.currentTimeOnDifferentDate(targetDate),
-                    )),
+              allowSnapshotting: false,
+              builder: (context) => AddEditEntryPage(
+                entry: entry,
+                openCamera: false,
+                images: entryImages,
+                overrideCreateDate: TimeManager.isToday(targetDate)
+                    ? DateTime.now()
+                    : TimeManager.currentTimeOnDifferentDate(targetDate),
+              ),
+            ),
           );
         }
       }
@@ -118,122 +128,160 @@ class _HomePageState extends State<HomePage>
     final entryImagesProvider = Provider.of<EntryImagesProvider>(context);
 
     Entry? todayEntry = entriesProvider.getEntryForToday();
-    List<EntryImage> todayImages =
-        todayEntry != null ? entryImagesProvider.getForEntry(todayEntry) : [];
+    List<EntryImage> todayImages = todayEntry != null
+        ? entryImagesProvider.getForEntry(todayEntry)
+        : [];
 
-    List<Flashback> flashbacks =
-        FlashbackManager.getFlashbacks(context, entriesProvider.entries);
+    List<Flashback> flashbacks = FlashbackManager.getFlashbacks(
+      context,
+      entriesProvider.entries,
+    );
 
     String viewMode = ConfigProvider.instance.get(ConfigKey.homePageViewMode);
     bool listView = viewMode == 'list';
 
     return Center(
-      child: Stack(alignment: Alignment.bottomCenter, children: [
-        buildEntries(context, configProvider, flashbacks, listView),
-        HidingWidget(
-          duration: Duration(milliseconds: 200),
-          hideDirection: HideDirection.down,
-          scrollController: _scrollController,
-          child: Padding(
-            padding: const EdgeInsets.only(left: 8.0, right: 8.0, bottom: 8.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                if (Platform.isAndroid)
-                  FloatingActionButton.small(
-                    heroTag: "home-camera-button",
+      child: Stack(
+        alignment: Alignment.bottomCenter,
+        children: [
+          buildEntries(context, configProvider, flashbacks, listView),
+          HidingWidget(
+            duration: Duration(milliseconds: 200),
+            hideDirection: HideDirection.down,
+            scrollController: _scrollController,
+            child: Padding(
+              padding: const EdgeInsets.only(
+                left: 8.0,
+                right: 8.0,
+                bottom: 8.0,
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  if (Platform.isAndroid || Platform.isIOS)
+                    FloatingActionButton.small(
+                      heroTag: "home-camera-button",
+                      backgroundColor: Theme.of(context).colorScheme.primary,
+                      elevation: 1,
+                      shape: CircleBorder(),
+                      child: Icon(
+                        Icons.camera_alt_rounded,
+                        color: Theme.of(context).colorScheme.primaryContainer,
+                        size: 24,
+                      ),
+                      onPressed: () async {
+                        await addOrEditTodayEntry(
+                          todayEntry,
+                          todayImages,
+                          true,
+                        );
+                      },
+                    ),
+                  FloatingActionButton(
+                    heroTag: "home-entry-button",
                     backgroundColor: Theme.of(context).colorScheme.primary,
                     elevation: 1,
-                    shape: CircleBorder(),
                     child: Icon(
-                      Icons.camera_alt_rounded,
+                      todayEntry == null
+                          ? Icons.add_rounded
+                          : Icons.edit_rounded,
                       color: Theme.of(context).colorScheme.primaryContainer,
-                      size: 24,
+                      size: 28,
                     ),
                     onPressed: () async {
-                      await addOrEditTodayEntry(todayEntry, todayImages, true);
+                      await addOrEditTodayEntry(todayEntry, todayImages, false);
                     },
                   ),
-                FloatingActionButton(
-                  heroTag: "home-entry-button",
-                  backgroundColor: Theme.of(context).colorScheme.primary,
-                  elevation: 1,
-                  child: Icon(
-                    todayEntry == null ? Icons.add_rounded : Icons.edit_rounded,
-                    color: Theme.of(context).colorScheme.primaryContainer,
-                    size: 28,
-                  ),
-                  onPressed: () async {
-                    await addOrEditTodayEntry(todayEntry, todayImages, false);
-                  },
-                ),
-              ],
+                ],
+              ),
             ),
           ),
-        ),
-      ]),
+        ],
+      ),
     );
   }
 
-  Widget buildEntries(BuildContext context, ConfigProvider configProvider,
-          List<Flashback> flashbacks, bool listView) =>
-      ListView(controller: _scrollController, children: [
-        const Center(
-            child: SizedBox(height: 430, width: 400, child: EntryCalendar())),
-        if (configProvider.get(ConfigKey.showFlashbacks))
-          Padding(
-            padding:
-                EdgeInsets.only(left: 16.0, right: 16.0, top: 8.0, bottom: 8.0),
-            child: Text(
-              AppLocalizations.of(context)!.flashbacksTitle,
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.normal),
-            ),
+  Widget buildEntries(
+    BuildContext context,
+    ConfigProvider configProvider,
+    List<Flashback> flashbacks,
+    bool listView,
+  ) => ListView(
+    controller: _scrollController,
+    children: [
+      const Center(
+        child: SizedBox(height: 430, width: 400, child: EntryCalendar()),
+      ),
+      if (configProvider.get(ConfigKey.showFlashbacks))
+        Padding(
+          padding: EdgeInsets.only(
+            left: 16.0,
+            right: 16.0,
+            top: 8.0,
+            bottom: 8.0,
           ),
-        if (configProvider.get(ConfigKey.showFlashbacks))
-          flashbacks.isEmpty
-              ? Center(
-                  child: Text(
-                    AppLocalizations.of(context)!.flaskbacksEmpty,
-                    style: TextStyle(
-                        fontSize: 18, color: Theme.of(context).disabledColor),
+          child: Text(
+            AppLocalizations.of(context)!.flashbacksTitle,
+            style: TextStyle(fontSize: 22, fontWeight: FontWeight.normal),
+          ),
+        ),
+      if (configProvider.get(ConfigKey.showFlashbacks))
+        flashbacks.isEmpty
+            ? Center(
+                child: Text(
+                  AppLocalizations.of(context)!.flaskbacksEmpty,
+                  style: TextStyle(
+                    fontSize: 18,
+                    color: Theme.of(context).disabledColor,
                   ),
-                )
-              : GridView.builder(
-                  padding: const EdgeInsets.only(bottom: 80),
-                  physics: const ScrollPhysics(),
-                  shrinkWrap: true,
-                  gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-                    maxCrossAxisExtent: listView ? 500 : 300,
-                    crossAxisSpacing: 1.0, // Spacing between columns
-                    mainAxisSpacing: 1.0, // Spacing between rows
-                    childAspectRatio: listView ? 2.0 : 1.0,
-                  ),
-                  itemCount: flashbacks.length,
-                  itemBuilder: (context, index) {
-                    final flashback = flashbacks[index];
-                    return GestureDetector(
-                        onTap: () async {
-                          await Navigator.of(context).push(MaterialPageRoute(
-                            allowSnapshotting: false,
-                            builder: (context) => EntryDetailPage(
-                                filtered: false,
-                                index: EntriesProvider.instance
-                                    .getIndexOfEntry(flashback.entry.id!)),
-                          ));
-                        },
-                        child: listView
-                            ? LargeEntryCardWidget(
-                                title: flashback.title,
-                                entry: flashback.entry,
-                                images: EntryImagesProvider.instance
-                                    .getForEntry(flashback.entry))
-                            : EntryCardWidget(
-                                title: flashback.title,
-                                entry: flashback.entry,
-                                images: EntryImagesProvider.instance
-                                    .getForEntry(flashback.entry)));
-                  },
                 ),
-      ]);
+              )
+            : GridView.builder(
+                padding: const EdgeInsets.only(bottom: 80),
+                physics: const ScrollPhysics(),
+                shrinkWrap: true,
+                gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+                  maxCrossAxisExtent: listView ? 500 : 300,
+                  crossAxisSpacing: 1.0, // Spacing between columns
+                  mainAxisSpacing: 1.0, // Spacing between rows
+                  childAspectRatio: listView ? 2.0 : 1.0,
+                ),
+                itemCount: flashbacks.length,
+                itemBuilder: (context, index) {
+                  final flashback = flashbacks[index];
+                  return GestureDetector(
+                    onTap: () async {
+                      await Navigator.of(context).push(
+                        MaterialPageRoute(
+                          allowSnapshotting: false,
+                          builder: (context) => EntryDetailPage(
+                            filtered: false,
+                            index: EntriesProvider.instance.getIndexOfEntry(
+                              flashback.entry.id!,
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                    child: listView
+                        ? LargeEntryCardWidget(
+                            title: flashback.title,
+                            entry: flashback.entry,
+                            images: EntryImagesProvider.instance.getForEntry(
+                              flashback.entry,
+                            ),
+                          )
+                        : EntryCardWidget(
+                            title: flashback.title,
+                            entry: flashback.entry,
+                            images: EntryImagesProvider.instance.getForEntry(
+                              flashback.entry,
+                            ),
+                          ),
+                  );
+                },
+              ),
+    ],
+  );
 }

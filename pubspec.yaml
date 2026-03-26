@@ -64,6 +64,10 @@ dependencies:
   flutter_displaymode: ^0.7.0
 dev_dependencies:
   flutter_lints: ^5.0.0
+  integration_test:
+    sdk: flutter
+  flutter_test:
+    sdk: flutter
 
 flutter:
   generate: true
@@ -84,7 +88,7 @@ icons_launcher:
       adaptive_round_image: "assets/logo.png"
       adaptive_monochrome_image: "assets/logo_monochrome.png"
     ios:
-      enable: false
+      enable: true
       image_path: "assets/logo_rectangle.png"
     macos:
       enable: false

@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(flutter --version)",
+      "Read(//Users/mac/development/flutter/bin/**)",
+      "Read(//opt/homebrew/bin/**)",
+      "Read(//Users/mac/flutter/bin/**)",
+      "Bash(fvm --version)",
+      "Bash(rm -rf Pods Podfile.lock .symlinks)",
+      "Bash(pod install:*)",
+      "Bash(flutter run:*)",
+      "Bash(flutter pub:*)"
+    ]
+  }
+}

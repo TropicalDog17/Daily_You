@@ -19,16 +19,21 @@ class LaunchPage extends StatefulWidget {
 
 class _LaunchPageState extends State<LaunchPage> {
   bool isLoading = true;
+  bool _didInit = false;
 
   @override
-  void initState() {
-    super.initState();
-    _storeLocalizedNotificationStrings();
-    _updateAppShortcuts();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_didInit) return;
+    _didInit = true;
+
+    final localization = AppLocalizations.of(context)!;
+    _storeLocalizedNotificationStrings(localization);
+    _updateAppShortcuts(localization);
     _checkDatabaseConnection();
   }
 
-  _updateAppShortcuts() {
+  _updateAppShortcuts(AppLocalizations localization) {
     final QuickActions quickActions = const QuickActions();
     quickActions.initialize((shortcutType) {
       if (shortcutType == 'action_log_today') {
@@ -41,23 +46,23 @@ class _LaunchPageState extends State<LaunchPage> {
     quickActions.setShortcutItems(<ShortcutItem>[
       ShortcutItem(
         type: 'action_log_today',
-        localizedTitle: AppLocalizations.of(context)!.dailyReminderTitle,
+        localizedTitle: localization.dailyReminderTitle,
         icon: '@drawable/ic_notification',
       ),
       ShortcutItem(
         type: 'action_take_photo',
-        localizedTitle: AppLocalizations.of(context)!.actionTakePhoto,
+        localizedTitle: localization.actionTakePhoto,
         icon: '@drawable/ic_notification',
       )
     ]);
   }
 
-  _storeLocalizedNotificationStrings() async {
+  _storeLocalizedNotificationStrings(AppLocalizations localization) async {
     var prefs = await SharedPreferences.getInstance();
     await prefs.setString(
-        'dailyReminderTitle', AppLocalizations.of(context)!.dailyReminderTitle);
-    await prefs.setString('dailyReminderDescription',
-        AppLocalizations.of(context)!.dailyReminderDescription);
+        'dailyReminderTitle', localization.dailyReminderTitle);
+    await prefs.setString(
+        'dailyReminderDescription', localization.dailyReminderDescription);
   }
 
   _checkDatabaseConnection() async {

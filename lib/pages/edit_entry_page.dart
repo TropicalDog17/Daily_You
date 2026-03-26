@@ -64,8 +64,8 @@ class _AddEditEntryPageState extends State<AddEditEntryPage>
     if (widget.entry == null) {
       var createTime =
           (TimeManager.isToday(widget.overrideCreateDate ?? DateTime.now()))
-              ? DateTime.now()
-              : (widget.overrideCreateDate ?? DateTime.now());
+          ? DateTime.now()
+          : (widget.overrideCreateDate ?? DateTime.now());
       _entry = await EntriesProvider.instance.createNewEntry(createTime);
       _newEntry = true;
     } else {
@@ -127,8 +127,9 @@ class _AddEditEntryPageState extends State<AddEditEntryPage>
           title: Text(AppLocalizations.of(context)!.deleteLogTitle),
           actions: [
             TextButton(
-              child:
-                  Text(MaterialLocalizations.of(context).deleteButtonTooltip),
+              child: Text(
+                MaterialLocalizations.of(context).deleteButtonTooltip,
+              ),
               onPressed: () async {
                 _deletingEntry = true;
                 Navigator.of(context).popUntil((route) => route.isFirst);
@@ -140,7 +141,7 @@ class _AddEditEntryPageState extends State<AddEditEntryPage>
               onPressed: () async {
                 Navigator.pop(context);
               },
-            )
+            ),
           ],
           content: Text(AppLocalizations.of(context)!.deleteLogDescription),
         );
@@ -174,28 +175,33 @@ class _AddEditEntryPageState extends State<AddEditEntryPage>
           },
           child: Scaffold(
             appBar: AppBar(
-                leading: BackButton(
-                  onPressed: () {
-                    Navigator.of(context).popUntil((route) => route.isFirst);
-                  },
-                ),
-                actions: [_deleteButton(), _saveButton()]),
-            body: Column(children: [
-              Expanded(
-                child: Container(
-                  constraints: BoxConstraints.loose(const Size.fromWidth(800)),
-                  child: ListView(
-                    padding: const EdgeInsets.only(left: 8, right: 8),
-                    children: [
-                      if (_currentImages.isNotEmpty)
-                        EntryImageEditableList(
+              leading: BackButton(
+                onPressed: () {
+                  Navigator.of(context).popUntil((route) => route.isFirst);
+                },
+              ),
+              actions: [_deleteButton(), _saveButton()],
+            ),
+            body: Column(
+              children: [
+                Expanded(
+                  child: Container(
+                    constraints: BoxConstraints.loose(
+                      const Size.fromWidth(800),
+                    ),
+                    child: ListView(
+                      padding: const EdgeInsets.only(left: 8, right: 8),
+                      children: [
+                        if (_currentImages.isNotEmpty)
+                          EntryImageEditableList(
                             images: _currentImages,
                             onImagesChanged: (images) async {
                               _currentImages = images;
                               await _saveEntry();
-                            }),
-                      StatefulBuilder(
-                        builder: (context, setState) => EntryMoodPicker(
+                            },
+                          ),
+                        StatefulBuilder(
+                          builder: (context, setState) => EntryMoodPicker(
                             actions: [
                               _changeDateButton(),
                               EntryImagePicker(
@@ -204,87 +210,99 @@ class _AddEditEntryPageState extends State<AddEditEntryPage>
                                   _addImage(newImages);
                                 },
                                 openCamera: widget.openCamera && !_openedCamera,
-                              )
+                              ),
                             ],
                             moodValue: mood,
                             onChangedMood: (mood) {
                               setState(() => this.mood = mood);
-                              EasyDebounce.debounce("save-entry",
-                                  Duration(seconds: 5), () => _saveEntry());
-                            }),
-                      ),
-                      StatefulBuilder(
+                              EasyDebounce.debounce(
+                                "save-entry",
+                                Duration(seconds: 5),
+                                () => _saveEntry(),
+                              );
+                            },
+                          ),
+                        ),
+                        StatefulBuilder(
                           builder: (context, setState) => EntryTextEditor(
-                                text: text,
-                                focusNode: _focusNode,
-                                textEditingController: _textEditingController,
-                                undoHistoryController: _undoController,
-                              )),
-                      const SizedBox(height: 16),
-                    ],
+                            text: text,
+                            focusNode: _focusNode,
+                            textEditingController: _textEditingController,
+                            undoHistoryController: _undoController,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-              SafeArea(
-                top: false,
-                child: EditToolbar(
-                  controller: _textEditingController,
-                  undoController: _undoController,
-                  focusNode: _focusNode,
-                  trailer:
-                      TemplateSelectButton(controller: _textEditingController),
+                SafeArea(
+                  top: false,
+                  child: EditToolbar(
+                    controller: _textEditingController,
+                    undoController: _undoController,
+                    focusNode: _focusNode,
+                    trailer: TemplateSelectButton(
+                      controller: _textEditingController,
+                    ),
+                  ),
                 ),
-              ),
-            ]),
+              ],
+            ),
           ),
         );
 
   Widget _deleteButton() => IconButton(
-        icon: const Icon(Icons.delete),
-        onPressed: () => _showDeleteEntryPopup(),
-      );
+    icon: const Icon(Icons.delete),
+    onPressed: () => _showDeleteEntryPopup(),
+  );
 
   Widget _saveButton() => IconButton(
-        icon: const Icon(Icons.check_rounded),
-        onPressed: () => Navigator.of(context).pop(),
-      );
+    icon: const Icon(Icons.check_rounded),
+    onPressed: () => Navigator.of(context).pop(),
+  );
 
   Widget _changeDateButton() {
     final theme = Theme.of(context);
     final entriesProvider = Provider.of<EntriesProvider>(context);
 
     return TextButton.icon(
-        icon: SvgPicture.asset(
-          'assets/icons/calendar_event.svg',
-          colorFilter:
-              ColorFilter.mode(theme.colorScheme.primary, BlendMode.srcIn),
-          width: 24,
-          height: 24,
+      icon: SvgPicture.asset(
+        'assets/icons/calendar_event.svg',
+        colorFilter: ColorFilter.mode(
+          theme.colorScheme.primary,
+          BlendMode.srcIn,
         ),
-        onPressed: () async {
-          DateTime? pickedDate = await showDatePicker(
-            selectableDayPredicate: (date) =>
-                entriesProvider.getEntryForDate(date) == null ||
-                TimeManager.isSameDay(date, entryDate!),
-            initialDatePickerMode: DatePickerMode.day,
-            context: context,
-            initialDate: entryDate,
-            firstDate: DateTime.utc(2000),
-            lastDate: DateTime.now(),
+        width: 24,
+        height: 24,
+      ),
+      onPressed: () async {
+        DateTime? pickedDate = await showDatePicker(
+          selectableDayPredicate: (date) =>
+              entriesProvider.getEntryForDate(date) == null ||
+              TimeManager.isSameDay(date, entryDate!),
+          initialDatePickerMode: DatePickerMode.day,
+          context: context,
+          initialDate: entryDate,
+          firstDate: DateTime.utc(2000),
+          lastDate: DateTime.now(),
+        );
+        if (pickedDate != null) {
+          entryDate = entryDate!.copyWith(
+            year: pickedDate.year,
+            month: pickedDate.month,
+            day: pickedDate.day,
           );
-          if (pickedDate != null) {
-            entryDate = entryDate!.copyWith(
-                year: pickedDate.year,
-                month: pickedDate.month,
-                day: pickedDate.day);
-            await _saveEntry();
-          }
-        },
-        label: Text(
-          DateFormat.yMMMEd(TimeManager.currentLocale(context))
-              .format(entryDate!),
-          style: TextStyle(fontSize: 16),
-        ));
+          await _saveEntry();
+        }
+      },
+      label: Text(
+        DateFormat.yMMMEd(
+          TimeManager.currentLocale(context),
+        ).format(entryDate!),
+        style: TextStyle(fontSize: 16),
+      ),
+    );
   }
 
   Future<void> _saveEntry() async {
@@ -300,7 +318,7 @@ class _AddEditEntryPageState extends State<AddEditEntryPage>
         timeModified: DateTime.now(),
       );
 
-      if (Platform.isAndroid &&
+      if ((Platform.isAndroid || Platform.isIOS) &&
           TimeManager.isSameDay(DateTime.now(), updatedEntry.timeCreate)) {
         await NotificationManager.instance.dismissReminderNotification();
       }
@@ -372,11 +390,14 @@ class _AddEditEntryPageState extends State<AddEditEntryPage>
       for (var image in _currentImages) {
         image.imgRank += 1;
       }
-      _currentImages.add(EntryImage(
+      _currentImages.add(
+        EntryImage(
           entryId: id,
           imgPath: imgPath,
           imgRank: 0,
-          timeCreate: DateTime.now()));
+          timeCreate: DateTime.now(),
+        ),
+      );
     }
     await _saveEntry();
   }

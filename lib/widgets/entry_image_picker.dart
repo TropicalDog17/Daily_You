@@ -13,8 +13,11 @@ class EntryImagePicker extends StatefulWidget {
   final ValueChanged<List<String>> onChangedImage;
   final bool openCamera;
 
-  const EntryImagePicker(
-      {super.key, required this.onChangedImage, this.openCamera = false});
+  const EntryImagePicker({
+    super.key,
+    required this.onChangedImage,
+    this.openCamera = false,
+  });
 
   @override
   State<EntryImagePicker> createState() => _EntryImagePickerState();
@@ -35,14 +38,16 @@ class _EntryImagePickerState extends State<EntryImagePicker> {
     final pickedFile = await picker.pickImage(source: ImageSource.camera);
 
     if (pickedFile != null) {
-      var imageName = await ImageStorage.instance
-          .create(pickedFile.name, await _compressImage(pickedFile, quality));
+      var imageName = await ImageStorage.instance.create(
+        pickedFile.name,
+        await _compressImage(pickedFile, quality),
+      );
       if (imageName == null) return;
       setState(() {
         widget.onChangedImage([imageName]);
       });
       // Delete picked file from cache
-      if (Platform.isAndroid) {
+      if (Platform.isAndroid || Platform.isIOS) {
         await File(pickedFile.path).delete();
       }
     }
@@ -55,13 +60,15 @@ class _EntryImagePickerState extends State<EntryImagePicker> {
 
     List<String> newImages = List.empty(growable: true);
     for (var file in pickedFiles) {
-      var imageName = await ImageStorage.instance
-          .create(file.name, await _compressImage(file, quality));
+      var imageName = await ImageStorage.instance.create(
+        file.name,
+        await _compressImage(file, quality),
+      );
       if (imageName != null) {
         newImages.add(imageName);
       }
       // Delete picked file from cache
-      if (Platform.isAndroid) {
+      if (Platform.isAndroid || Platform.isIOS) {
         await File(file.path).delete();
       }
     }
@@ -82,9 +89,13 @@ class _EntryImagePickerState extends State<EntryImagePicker> {
         (imageQuality == ImageQuality.noCompression)) {
       return await image.readAsBytes();
     } else {
-      if (Platform.isAndroid) {
-        return await FlutterImageCompress.compressWithFile(image.path,
-                quality: quality, minWidth: width, minHeight: width) ??
+      if (Platform.isAndroid || Platform.isIOS) {
+        return await FlutterImageCompress.compressWithFile(
+              image.path,
+              quality: quality,
+              minWidth: width,
+              minHeight: width,
+            ) ??
             await image.readAsBytes();
       } else {
         final cmd = img.Command()
@@ -110,9 +121,10 @@ class _EntryImagePickerState extends State<EntryImagePicker> {
             size: 24,
           ),
           style: IconButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.primaryContainer),
+            backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+          ),
         ),
-        if (Platform.isAndroid)
+        if (Platform.isAndroid || Platform.isIOS)
           IconButton(
             onPressed: _takePicture,
             icon: Icon(
@@ -121,8 +133,8 @@ class _EntryImagePickerState extends State<EntryImagePicker> {
               size: 24,
             ),
             style: IconButton.styleFrom(
-                backgroundColor:
-                    Theme.of(context).colorScheme.primaryContainer),
+              backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+            ),
           ),
       ],
     );

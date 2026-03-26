@@ -53,31 +53,38 @@ class _MobileScaffoldState extends State<MobileScaffold> {
             TextButton(
               onPressed: () async {
                 await configProvider.set(
-                    ConfigKey.dismissedNotificationOnboarding, true);
+                  ConfigKey.dismissedNotificationOnboarding,
+                  true,
+                );
                 Navigator.of(context).pop();
               },
               child: Text(MaterialLocalizations.of(context).closeButtonLabel),
             ),
           ],
-          content: Column(mainAxisSize: MainAxisSize.min, children: [
-            Center(
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Center(
                 child: Icon(
-              Icons.notifications_on_rounded,
-              color: Theme.of(context).colorScheme.onSurface,
-              size: 40,
-            )),
-            SizedBox(
-              height: 12,
-            ),
-            Text(AppLocalizations.of(context)!.settingsDailyReminderOnboarding),
-            SizedBox(
-              height: 8,
-            ),
-            Text(AppLocalizations.of(context)!
-                .settingsNotificationsPermissionsPrompt),
-            Divider(),
-            ...NotificationSettings.buildCoreReminderSettings(context),
-          ]),
+                  Icons.notifications_on_rounded,
+                  color: Theme.of(context).colorScheme.onSurface,
+                  size: 40,
+                ),
+              ),
+              SizedBox(height: 12),
+              Text(
+                AppLocalizations.of(context)!.settingsDailyReminderOnboarding,
+              ),
+              SizedBox(height: 8),
+              Text(
+                AppLocalizations.of(
+                  context,
+                )!.settingsNotificationsPermissionsPrompt,
+              ),
+              Divider(),
+              ...NotificationSettings.buildCoreReminderSettings(context),
+            ],
+          ),
         );
       },
     );
@@ -90,7 +97,7 @@ class _MobileScaffoldState extends State<MobileScaffold> {
     final List<String> appBarsTitles = [
       AppLocalizations.of(context)!.pageHomeTitle,
       AppLocalizations.of(context)!.pageGalleryTitle,
-      AppLocalizations.of(context)!.pageStatisticsTitle
+      AppLocalizations.of(context)!.pageStatisticsTitle,
     ];
     return NotificationListener<ScrollNotification>(
       onNotification: (notification) {
@@ -111,43 +118,47 @@ class _MobileScaffoldState extends State<MobileScaffold> {
       child: Scaffold(
         backgroundColor: theme.scaffoldBackgroundColor,
         appBar: AppBar(
-            title: Text(appBarsTitles[currentIndex]),
-            elevation: _isScrolled[currentIndex] ? 1 : 0,
-            scrolledUnderElevation: 1,
-            actions: [
-              if (Platform.isAndroid &&
-                  !configProvider.get(ConfigKey.dailyReminders) &&
-                  !configProvider
-                      .get(ConfigKey.dismissedNotificationOnboarding))
-                IconButton(
-                  icon: const Icon(Icons.notifications_off_rounded),
-                  onPressed: () async {
-                    _showNotificationOnboardingPopup();
-                  },
-                ),
+          title: Text(appBarsTitles[currentIndex]),
+          elevation: _isScrolled[currentIndex] ? 1 : 0,
+          scrolledUnderElevation: 1,
+          actions: [
+            if ((Platform.isAndroid || Platform.isIOS) &&
+                !configProvider.get(ConfigKey.dailyReminders) &&
+                !configProvider.get(ConfigKey.dismissedNotificationOnboarding))
               IconButton(
-                icon: const Icon(Icons.settings_rounded),
+                icon: const Icon(Icons.notifications_off_rounded),
                 onPressed: () async {
-                  await Navigator.of(context).push(MaterialPageRoute(
+                  _showNotificationOnboardingPopup();
+                },
+              ),
+            IconButton(
+              icon: const Icon(Icons.settings_rounded),
+              onPressed: () async {
+                await Navigator.of(context).push(
+                  MaterialPageRoute(
                     allowSnapshotting: false,
                     builder: (context) => const SettingsPage(),
-                  ));
-                },
-              )
-            ]),
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
         body: PageView(
-            controller: _pageController,
-            physics: const FastPageViewScrollPhysics(),
-            onPageChanged: (index) {
-              FocusManager.instance.primaryFocus?.unfocus();
-              EasyDebounce.debounce(
-                  "page-change",
-                  Duration(milliseconds: 150),
-                  () => setState(() {
-                        currentIndex = index;
-                      }));
-            },
-            children: pages),
+          controller: _pageController,
+          physics: const FastPageViewScrollPhysics(),
+          onPageChanged: (index) {
+            FocusManager.instance.primaryFocus?.unfocus();
+            EasyDebounce.debounce(
+              "page-change",
+              Duration(milliseconds: 150),
+              () => setState(() {
+                currentIndex = index;
+              }),
+            );
+          },
+          children: pages,
+        ),
         bottomNavigationBar: NavigationBar(
           height: 65,
           labelBehavior: NavigationDestinationLabelBehavior.onlyShowSelected,

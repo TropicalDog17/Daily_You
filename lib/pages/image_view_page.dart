@@ -13,11 +13,7 @@ class ImageViewPage extends StatefulWidget {
   final List<EntryImage> images;
   final int index;
 
-  const ImageViewPage({
-    super.key,
-    required this.images,
-    required this.index,
-  });
+  const ImageViewPage({super.key, required this.images, required this.index});
 
   @override
   State<ImageViewPage> createState() => _ImageViewPageState();
@@ -44,74 +40,75 @@ class _ImageViewPageState extends State<ImageViewPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: AppBar(
-          actions: [shareButton(context), downloadButton(context)],
-        ),
-        body: ExtendedImageGesturePageView.builder(
-          controller: _pageController,
-          physics: FastPageViewScrollPhysics(),
-          itemCount: widget.images.length,
-          onPageChanged: (int newIndex) {
-            _currentPageNotifier.value = newIndex;
-          },
-          itemBuilder: (context, currentIndex) {
-            return FutureBuilder(
-                future: ImageStorage.instance
-                    .getBytes(widget.images[currentIndex].imgPath),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: SizedBox());
-                  } else if (snapshot.hasError) {
-                    return Text('${snapshot.error}');
-                  } else if (snapshot.hasData) {
-                    return ExtendedImage.memory(
-                      snapshot.data!,
-                      fit: BoxFit.contain,
-                      filterQuality: FilterQuality.high,
-                      mode: ExtendedImageMode.gesture,
-                      initGestureConfigHandler: (state) {
-                        return GestureConfig(
-                            minScale: 0.5,
-                            maxScale: 10,
-                            initialScale: 1,
-                            inPageView: true);
-                      },
-                      onDoubleTap: (state) {
-                        final double newScale =
-                            state.gestureDetails!.totalScale == 1.0 ? 2.0 : 1.0;
-                        state.handleDoubleTap(scale: newScale);
-                      },
+      appBar: AppBar(actions: [shareButton(context), downloadButton(context)]),
+      body: ExtendedImageGesturePageView.builder(
+        controller: _pageController,
+        physics: FastPageViewScrollPhysics(),
+        itemCount: widget.images.length,
+        onPageChanged: (int newIndex) {
+          _currentPageNotifier.value = newIndex;
+        },
+        itemBuilder: (context, currentIndex) {
+          return FutureBuilder(
+            future: ImageStorage.instance.getBytes(
+              widget.images[currentIndex].imgPath,
+            ),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: SizedBox());
+              } else if (snapshot.hasError) {
+                return Text('${snapshot.error}');
+              } else if (snapshot.hasData) {
+                return ExtendedImage.memory(
+                  snapshot.data!,
+                  fit: BoxFit.contain,
+                  filterQuality: FilterQuality.high,
+                  mode: ExtendedImageMode.gesture,
+                  initGestureConfigHandler: (state) {
+                    return GestureConfig(
+                      minScale: 0.5,
+                      maxScale: 10,
+                      initialScale: 1,
+                      inPageView: true,
                     );
-                  } else {
-                    // Image not found
-                    return const Center(
-                      child: Icon(
-                        Icons.image_search_rounded,
-                        size: 36,
-                      ),
-                    );
-                  }
-                });
-          },
-        ));
+                  },
+                  onDoubleTap: (state) {
+                    final double newScale =
+                        state.gestureDetails!.totalScale == 1.0 ? 2.0 : 1.0;
+                    state.handleDoubleTap(scale: newScale);
+                  },
+                );
+              } else {
+                // Image not found
+                return const Center(
+                  child: Icon(Icons.image_search_rounded, size: 36),
+                );
+              }
+            },
+          );
+        },
+      ),
+    );
   }
 
   Widget shareButton(BuildContext context) {
-    if (Platform.isAndroid) {
+    if (Platform.isAndroid || Platform.isIOS) {
       return ValueListenableBuilder(
         valueListenable: _currentPageNotifier,
         builder: (context, currentIndex, child) {
           return IconButton(
-              icon: const Icon(Icons.share_rounded),
-              onPressed: () async {
-                final currentImage = widget.images[currentIndex].imgPath;
-                var bytes = await ImageStorage.instance.getBytes(currentImage);
-                if (bytes != null) {
-                  await Share.shareXFiles(
-                      [XFile.fromData(bytes, mimeType: "images/*")],
-                      fileNameOverrides: [currentImage]);
-                }
-              });
+            icon: const Icon(Icons.share_rounded),
+            onPressed: () async {
+              final currentImage = widget.images[currentIndex].imgPath;
+              var bytes = await ImageStorage.instance.getBytes(currentImage);
+              if (bytes != null) {
+                await Share.shareXFiles(
+                  [XFile.fromData(bytes, mimeType: "images/*")],
+                  fileNameOverrides: [currentImage],
+                );
+              }
+            },
+          );
         },
       );
     }
@@ -120,35 +117,39 @@ class _ImageViewPageState extends State<ImageViewPage> {
   }
 
   Widget downloadButton(BuildContext context) {
-    if (Platform.isAndroid) {
+    if (Platform.isAndroid || Platform.isIOS) {
       return ValueListenableBuilder(
-          valueListenable: _currentPageNotifier,
-          builder: (context, currentIndex, child) {
-            return IconButton(
-                icon: const Icon(Icons.download_rounded),
-                onPressed: () async {
-                  final currentImage = widget.images[currentIndex].imgPath;
-                  var bytes =
-                      await ImageStorage.instance.getBytes(currentImage);
-                  if (bytes != null) {
-                    String? saveDir;
-                    try {
-                      saveDir = await FileLayer.pickDirectory();
-                    } catch (_) {
-                      return;
-                    }
-                    if (saveDir == null) return;
-                    var newImageName = await FileLayer.createFile(
-                        saveDir, currentImage, bytes);
-                    if (newImageName != null) {
-                      if (Platform.isAndroid) {
-                        // Add image to media store
-                        MediaScanner.loadMedia(path: newImageName);
-                      }
-                    }
+        valueListenable: _currentPageNotifier,
+        builder: (context, currentIndex, child) {
+          return IconButton(
+            icon: const Icon(Icons.download_rounded),
+            onPressed: () async {
+              final currentImage = widget.images[currentIndex].imgPath;
+              var bytes = await ImageStorage.instance.getBytes(currentImage);
+              if (bytes != null) {
+                String? saveDir;
+                try {
+                  saveDir = await FileLayer.pickDirectory();
+                } catch (_) {
+                  return;
+                }
+                if (saveDir == null) return;
+                var newImageName = await FileLayer.createFile(
+                  saveDir,
+                  currentImage,
+                  bytes,
+                );
+                if (newImageName != null) {
+                  if (Platform.isAndroid) {
+                    // Add image to media store
+                    MediaScanner.loadMedia(path: newImageName);
                   }
-                });
-          });
+                }
+              }
+            },
+          );
+        },
+      );
     }
 
     return Container();

@@ -45,20 +45,25 @@ class _SettingsPageState extends State<SettingsPage> {
             text: TextSpan(
               children: [
                 TextSpan(
-                    text: AppLocalizations.of(context)!.settingsMadeWithLove,
+                  text: AppLocalizations.of(context)!.settingsMadeWithLove,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Theme.of(context).colorScheme.secondary,
+                  ),
+                ),
+                if (entriesProvider.entries.length > 30)
+                  TextSpan(
+                    text: " ",
                     style: TextStyle(
-                        fontSize: 14,
-                        color: Theme.of(context).colorScheme.secondary)),
+                      fontSize: 14,
+                      color: Theme.of(context).colorScheme.secondary,
+                    ),
+                  ),
                 if (entriesProvider.entries.length > 30)
                   TextSpan(
-                      text: " ",
-                      style: TextStyle(
-                          fontSize: 14,
-                          color: Theme.of(context).colorScheme.secondary)),
-                if (entriesProvider.entries.length > 30)
-                  TextSpan(
-                    text: AppLocalizations.of(context)!
-                        .settingsConsiderSupporting,
+                    text: AppLocalizations.of(
+                      context,
+                    )!.settingsConsiderSupporting,
                     style: TextStyle(
                       fontSize: 14,
                       color: Theme.of(context).colorScheme.primary,
@@ -67,59 +72,70 @@ class _SettingsPageState extends State<SettingsPage> {
                     recognizer: TapGestureRecognizer()
                       ..onTap = () async {
                         await launchUrl(
-                            Uri(
-                                scheme: "https",
-                                host: "github.com",
-                                path: "/Demizo/Daily_You",
-                                queryParameters: {"tab": "readme-ov-file"},
-                                fragment: "support-the-app"),
-                            mode: LaunchMode.externalApplication);
+                          Uri(
+                            scheme: "https",
+                            host: "github.com",
+                            path: "/Demizo/Daily_You",
+                            queryParameters: {"tab": "readme-ov-file"},
+                            fragment: "support-the-app",
+                          ),
+                          mode: LaunchMode.externalApplication,
+                        );
                       },
                   ),
               ],
             ),
           ),
-        )
+        ),
       ],
       body: ListView(
         children: [
           SettingsCategory(
-              title: AppLocalizations.of(context)!.settingsAppearanceTitle,
-              icon: Icons.palette_rounded,
-              page: AppearanceSettings()),
+            title: AppLocalizations.of(context)!.settingsAppearanceTitle,
+            icon: Icons.palette_rounded,
+            page: AppearanceSettings(),
+          ),
           SettingsCategory(
-              title: AppLocalizations.of(context)!.settingsLanguageTitle,
-              icon: Icons.language_rounded,
-              page: LanguageSettings()),
-          if (Platform.isAndroid)
+            title: AppLocalizations.of(context)!.settingsLanguageTitle,
+            icon: Icons.language_rounded,
+            page: LanguageSettings(),
+          ),
+          if (Platform.isAndroid || Platform.isIOS)
             SettingsCategory(
-                title: AppLocalizations.of(context)!.settingsNotificationsTitle,
-                icon: Icons.notifications_rounded,
-                page: NotificationSettings()),
+              title: AppLocalizations.of(context)!.settingsNotificationsTitle,
+              icon: Icons.notifications_rounded,
+              page: NotificationSettings(),
+            ),
           SettingsCategory(
-              title: AppLocalizations.of(context)!.flashbacksTitle,
-              icon: Icons.history_rounded,
-              page: FlashbackSettings()),
+            title: AppLocalizations.of(context)!.flashbacksTitle,
+            icon: Icons.history_rounded,
+            page: FlashbackSettings(),
+          ),
           SettingsCategory(
-              title: AppLocalizations.of(context)!.settingsTemplatesTitle,
-              icon: Icons.description_rounded,
-              page: TemplateSettings()),
+            title: AppLocalizations.of(context)!.settingsTemplatesTitle,
+            icon: Icons.description_rounded,
+            page: TemplateSettings(),
+          ),
           SettingsCategory(
-              title: AppLocalizations.of(context)!.settingsStorageTitle,
-              icon: Icons.storage_rounded,
-              page: StorageSettings()),
+            title: AppLocalizations.of(context)!.settingsStorageTitle,
+            icon: Icons.storage_rounded,
+            page: StorageSettings(),
+          ),
           SettingsCategory(
-              title: AppLocalizations.of(context)!.settingsSecurityTitle,
-              icon: Icons.security_rounded,
-              page: SecuritySettings()),
+            title: AppLocalizations.of(context)!.settingsSecurityTitle,
+            icon: Icons.security_rounded,
+            page: SecuritySettings(),
+          ),
           SettingsCategory(
-              title: AppLocalizations.of(context)!.settingsBackupRestoreTitle,
-              icon: Icons.settings_backup_restore_rounded,
-              page: BackupRestoreSettings()),
+            title: AppLocalizations.of(context)!.settingsBackupRestoreTitle,
+            icon: Icons.settings_backup_restore_rounded,
+            page: BackupRestoreSettings(),
+          ),
           SettingsCategory(
-              title: AppLocalizations.of(context)!.settingsAboutTitle,
-              icon: Icons.info_rounded,
-              page: AboutSettings()),
+            title: AppLocalizations.of(context)!.settingsAboutTitle,
+            icon: Icons.info_rounded,
+            page: AboutSettings(),
+          ),
         ],
       ),
     );

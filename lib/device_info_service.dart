@@ -25,6 +25,10 @@ class DeviceInfoService {
       androidSdk = androidInfo.version.sdkInt;
       model = androidInfo.model;
       supportsBiometrics = await auth.canCheckBiometrics;
+    } else if (Platform.isIOS) {
+      final iosInfo = await plugin.iosInfo;
+      model = iosInfo.model;
+      supportsBiometrics = await auth.canCheckBiometrics;
     }
   }
 }
