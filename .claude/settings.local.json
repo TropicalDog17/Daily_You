@@ -25,7 +25,9 @@
       "Bash(xcrun simctl:*)",
       "Bash(xcodebuild -downloadPlatform iOS)",
       "Bash(xcodebuild -downloadAllPreviouslySelectedPlatforms)",
-      "Bash(xcodebuild -downloadPlatform iOS -buildVersion 22A3351)"
+      "Bash(xcodebuild -downloadPlatform iOS -buildVersion 22A3351)",
+      "Bash(flutter clean:*)",
+      "Bash(/usr/libexec/PlistBuddy -c \"Print\" Runner.xcodeproj/project.pbxproj)"
     ]
   }
 }
