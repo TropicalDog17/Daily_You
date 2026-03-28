@@ -56,14 +56,16 @@ class EntryDayCell extends StatelessWidget {
                   borderRadius: BorderRadius.all(Radius.circular(8))),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
                     '${date.day}',
                     style: TextStyle(
-                        fontSize: 16,
+                        fontSize: 14,
+                        height: 1.0,
                         color: Theme.of(context).colorScheme.onSurface),
                   ),
-                  MoodIcon(moodValue: entry.mood)
+                  MoodIcon(moodValue: entry.mood, size: 18)
                 ],
               ),
             ),
