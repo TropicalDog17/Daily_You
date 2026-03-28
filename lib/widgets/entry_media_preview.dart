@@ -5,11 +5,13 @@ import 'package:flutter/material.dart';
 class EntryMediaPreview extends StatelessWidget {
   final EntryImage media;
   final int cacheSize;
+  final bool showMediaTypeBadge;
 
   const EntryMediaPreview({
     super.key,
     required this.media,
     this.cacheSize = 500,
+    this.showMediaTypeBadge = false,
   });
 
   @override
@@ -18,29 +20,22 @@ class EntryMediaPreview extends StatelessWidget {
       fit: StackFit.expand,
       alignment: Alignment.center,
       children: [
-        LocalImageLoader(
-          imagePath: media.imgPath,
-          cacheSize: cacheSize,
-        ),
+        LocalImageLoader(imagePath: media.imgPath, cacheSize: cacheSize),
         if (media.hasMotion)
           const Center(
             child: Icon(
               Icons.play_circle_fill_rounded,
               color: Colors.white,
               size: 36,
-              shadows: [
-                Shadow(
-                  color: Colors.black54,
-                  blurRadius: 8,
-                ),
-              ],
+              shadows: [Shadow(color: Colors.black54, blurRadius: 8)],
             ),
           ),
-        Positioned(
-          top: 8,
-          right: 8,
-          child: _MediaTypeBadge(mediaType: media.mediaType),
-        ),
+        if (showMediaTypeBadge)
+          Positioned(
+            top: 8,
+            right: 8,
+            child: _MediaTypeBadge(mediaType: media.mediaType),
+          ),
       ],
     );
   }
