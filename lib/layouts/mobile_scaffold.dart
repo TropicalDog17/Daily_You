@@ -4,6 +4,7 @@ import 'package:daily_you/config_provider.dart';
 import 'package:daily_you/layouts/fast_page_view_scroll_physics.dart';
 import 'package:daily_you/pages/settings/notification_settings.dart';
 import 'package:easy_debounce/easy_debounce.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:daily_you/l10n/generated/app_localizations.dart';
 import 'package:daily_you/pages/statistics_page.dart';
@@ -79,7 +80,8 @@ class _MobileScaffoldState extends State<MobileScaffold> {
               Text(
                 AppLocalizations.of(
                   context,
-                )!.settingsNotificationsPermissionsPrompt,
+                )!
+                    .settingsNotificationsPermissionsPrompt,
               ),
               Divider(),
               ...NotificationSettings.buildCoreReminderSettings(context),
@@ -93,6 +95,7 @@ class _MobileScaffoldState extends State<MobileScaffold> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isIOS = Platform.isIOS;
     final configProvider = Provider.of<ConfigProvider>(context);
     final List<String> appBarsTitles = [
       AppLocalizations.of(context)!.pageHomeTitle,
@@ -118,6 +121,7 @@ class _MobileScaffoldState extends State<MobileScaffold> {
       child: Scaffold(
         backgroundColor: theme.scaffoldBackgroundColor,
         appBar: AppBar(
+          centerTitle: isIOS,
           title: Text(appBarsTitles[currentIndex]),
           elevation: _isScrolled[currentIndex] ? 1 : 0,
           scrolledUnderElevation: 1,
@@ -126,13 +130,19 @@ class _MobileScaffoldState extends State<MobileScaffold> {
                 !configProvider.get(ConfigKey.dailyReminders) &&
                 !configProvider.get(ConfigKey.dismissedNotificationOnboarding))
               IconButton(
-                icon: const Icon(Icons.notifications_off_rounded),
+                icon: Icon(
+                  isIOS
+                      ? CupertinoIcons.bell_fill
+                      : Icons.notifications_off_rounded,
+                ),
                 onPressed: () async {
                   _showNotificationOnboardingPopup();
                 },
               ),
             IconButton(
-              icon: const Icon(Icons.settings_rounded),
+              icon: Icon(
+                isIOS ? CupertinoIcons.gear_alt_fill : Icons.settings_rounded,
+              ),
               onPressed: () async {
                 await Navigator.of(context).push(
                   MaterialPageRoute(
@@ -159,37 +169,76 @@ class _MobileScaffoldState extends State<MobileScaffold> {
           },
           children: pages,
         ),
-        bottomNavigationBar: NavigationBar(
-          height: 65,
-          labelBehavior: NavigationDestinationLabelBehavior.onlyShowSelected,
-          elevation: 1,
-          selectedIndex: currentIndex,
-          onDestinationSelected: (index) {
-            EasyDebounce.cancel("page-change");
-            setState(() {
-              currentIndex = index;
-            });
-            _pageController.animateToPage(
-              index,
-              duration: const Duration(milliseconds: 250),
-              curve: Curves.easeOut,
-            );
-          },
-          destinations: [
-            NavigationDestination(
-              icon: const Icon(Icons.home_rounded),
-              label: AppLocalizations.of(context)!.pageHomeTitle,
-            ),
-            NavigationDestination(
-              icon: const Icon(Icons.photo_library_rounded),
-              label: AppLocalizations.of(context)!.pageGalleryTitle,
-            ),
-            NavigationDestination(
-              icon: const Icon(Icons.auto_graph_rounded),
-              label: AppLocalizations.of(context)!.pageStatisticsTitle,
-            ),
-          ],
-        ),
+        bottomNavigationBar: isIOS
+            ? CupertinoTabBar(
+                currentIndex: currentIndex,
+                backgroundColor:
+                    theme.colorScheme.surface.withValues(alpha: 0.95),
+                activeColor: theme.colorScheme.primary,
+                inactiveColor: theme.colorScheme.onSurfaceVariant,
+                border: Border(
+                  top: BorderSide(
+                    color: theme.dividerColor.withValues(alpha: 0.35),
+                  ),
+                ),
+                onTap: (index) {
+                  EasyDebounce.cancel("page-change");
+                  setState(() {
+                    currentIndex = index;
+                  });
+                  _pageController.animateToPage(
+                    index,
+                    duration: const Duration(milliseconds: 250),
+                    curve: Curves.easeOut,
+                  );
+                },
+                items: [
+                  BottomNavigationBarItem(
+                    icon: const Icon(CupertinoIcons.house_fill),
+                    label: AppLocalizations.of(context)!.pageHomeTitle,
+                  ),
+                  BottomNavigationBarItem(
+                    icon: const Icon(CupertinoIcons.photo_on_rectangle),
+                    label: AppLocalizations.of(context)!.pageGalleryTitle,
+                  ),
+                  BottomNavigationBarItem(
+                    icon: const Icon(CupertinoIcons.chart_bar_fill),
+                    label: AppLocalizations.of(context)!.pageStatisticsTitle,
+                  ),
+                ],
+              )
+            : NavigationBar(
+                height: 65,
+                labelBehavior:
+                    NavigationDestinationLabelBehavior.onlyShowSelected,
+                elevation: 1,
+                selectedIndex: currentIndex,
+                onDestinationSelected: (index) {
+                  EasyDebounce.cancel("page-change");
+                  setState(() {
+                    currentIndex = index;
+                  });
+                  _pageController.animateToPage(
+                    index,
+                    duration: const Duration(milliseconds: 250),
+                    curve: Curves.easeOut,
+                  );
+                },
+                destinations: [
+                  NavigationDestination(
+                    icon: const Icon(Icons.home_rounded),
+                    label: AppLocalizations.of(context)!.pageHomeTitle,
+                  ),
+                  NavigationDestination(
+                    icon: const Icon(Icons.photo_library_rounded),
+                    label: AppLocalizations.of(context)!.pageGalleryTitle,
+                  ),
+                  NavigationDestination(
+                    icon: const Icon(Icons.auto_graph_rounded),
+                    label: AppLocalizations.of(context)!.pageStatisticsTitle,
+                  ),
+                ],
+              ),
       ),
     );
   }

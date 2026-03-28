@@ -37,7 +37,15 @@ class _MoodTotalsChartState extends State<MoodTotalsChart> {
     return BarChartGroupData(
       x: x,
       barRods: [
-        BarChartRodData(toY: value, color: color, width: 16),
+        BarChartRodData(
+          toY: value,
+          color: color,
+          width: 16,
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(8),
+            topRight: Radius.circular(8),
+          ),
+        ),
       ],
       showingTooltipIndicators: touchedGroupIndex == x ? [0] : [],
     );
@@ -55,7 +63,7 @@ class _MoodTotalsChartState extends State<MoodTotalsChart> {
           BarChartData(
             alignment: BarChartAlignment.spaceAround,
             borderData: FlBorderData(
-              show: true,
+              show: false,
               border: Border.symmetric(
                 horizontal: BorderSide(
                   color: Theme.of(context)
@@ -99,7 +107,7 @@ class _MoodTotalsChartState extends State<MoodTotalsChart> {
                 color: Theme.of(context)
                     .colorScheme
                     .onSurface
-                    .withValues(alpha: 0.2),
+                    .withValues(alpha: 0.16),
                 strokeWidth: 1,
               ),
             ),
@@ -126,9 +134,9 @@ class _MoodTotalsChartState extends State<MoodTotalsChart> {
                   return BarTooltipItem(
                     rod.toY.toInt().toString(),
                     TextStyle(
-                      fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.w700,
                       color: rod.color,
-                      fontSize: 18,
+                      fontSize: 17,
                     ),
                   );
                 },
@@ -174,7 +182,7 @@ class _IconWidgetState extends AnimatedWidgetBaseState<_MoodLabelIconWidget> {
   Widget build(BuildContext context) {
     final scale = 1 + _scaleTween!.evaluate(animation) * 0.5;
     return Transform(
-        transform: Matrix4.rotationZ(0).scaled(scale, scale),
+        transform: Matrix4.rotationZ(0).scaledByDouble(scale, scale, 1, 1),
         origin: const Offset(14, 14),
         child: MoodIcon(moodValue: widget.mood));
   }

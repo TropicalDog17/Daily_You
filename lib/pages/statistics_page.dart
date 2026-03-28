@@ -28,9 +28,23 @@ class _StatsPageState extends State<StatsPage>
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    return Center(
-      child: SingleChildScrollView(
-        child: buildEntries(context),
+    return SingleChildScrollView(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: buildEntries(context),
+    );
+  }
+
+  Widget _sectionTitle(BuildContext context, String title) {
+    final isIOS = Theme.of(context).platform == TargetPlatform.iOS;
+    return Padding(
+      padding: const EdgeInsets.only(top: 4, bottom: 4),
+      child: Text(
+        title,
+        style: TextStyle(
+          fontSize: isIOS ? 18 : 17,
+          fontWeight: isIOS ? FontWeight.w700 : FontWeight.w600,
+          letterSpacing: isIOS ? -0.2 : 0,
+        ),
       ),
     );
   }
@@ -46,7 +60,7 @@ class _StatsPageState extends State<StatsPage>
       children: [
         const MoodByMonthChart(),
         Padding(
-          padding: const EdgeInsets.only(left: 8.0, right: 8.0),
+          padding: const EdgeInsets.symmetric(horizontal: 8),
           child: Wrap(
             children: [
               StreakCard(
@@ -94,20 +108,20 @@ class _StatsPageState extends State<StatsPage>
           ),
         ),
         Center(
-          child: Text(
+          child: _sectionTitle(
+            context,
             AppLocalizations.of(context)!
                 .chartSummaryTitle(AppLocalizations.of(context)!.tagMoodTitle),
-            style: const TextStyle(fontSize: 18),
           ),
         ),
         MoodTotalsChart(
           moodCounts: getMoodTotals(entriesInRange),
         ),
         Center(
-          child: Text(
+          child: _sectionTitle(
+            context,
             AppLocalizations.of(context)!
                 .chartByDayTitle(AppLocalizations.of(context)!.tagMoodTitle),
-            style: const TextStyle(fontSize: 18),
           ),
         ),
         MoodByDayChart(
