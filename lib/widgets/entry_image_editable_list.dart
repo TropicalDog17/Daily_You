@@ -1,10 +1,9 @@
 import 'dart:ui';
 
 import 'package:daily_you/models/image.dart';
+import 'package:daily_you/widgets/entry_media_preview.dart';
 import 'package:flutter/material.dart';
 import 'package:daily_you/l10n/generated/app_localizations.dart';
-
-import 'local_image_loader.dart';
 
 class EntryImageEditableList extends StatefulWidget {
   final List<EntryImage> images;
@@ -101,7 +100,7 @@ class _EntryImageEditableListState extends State<EntryImageEditableList> {
       clipBehavior: Clip.antiAlias,
       child:
           Stack(alignment: Alignment.center, fit: StackFit.expand, children: [
-        LocalImageLoader(imagePath: _images[index].imgPath),
+        EntryMediaPreview(media: _images[index]),
         Column(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [

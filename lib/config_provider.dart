@@ -45,6 +45,8 @@ class ConfigKey {
   static const String alwaysRemind = "alwaysRemind";
   static const String dismissedNotificationOnboarding =
       "dismissedNotificationOnboarding";
+  static const String dismissedMainOnboarding = "dismissedMainOnboarding";
+  static const String streakRiskReminder = "streakRiskReminder";
   static const String overrideLanguage = "overrideLanguage";
   static const String showFlashbacks = "showFlashbacks";
   static const String excludeBadDaysFromFlashbacks =
@@ -111,6 +113,8 @@ class ConfigProvider with ChangeNotifier {
     ConfigKey.imageQualityLevel: ImageQuality.medium,
     ConfigKey.alwaysRemind: false,
     ConfigKey.dismissedNotificationOnboarding: false,
+    ConfigKey.dismissedMainOnboarding: false,
+    ConfigKey.streakRiskReminder: true,
     ConfigKey.overrideLanguage: null,
     ConfigKey.showFlashbacks: true,
     ConfigKey.excludeBadDaysFromFlashbacks: false,

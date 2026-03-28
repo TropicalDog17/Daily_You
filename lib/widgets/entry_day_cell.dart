@@ -5,7 +5,7 @@ import 'package:daily_you/models/image.dart';
 import 'package:daily_you/providers/entries_provider.dart';
 import 'package:daily_you/providers/entry_images_provider.dart';
 import 'package:daily_you/time_manager.dart';
-import 'package:daily_you/widgets/local_image_loader.dart';
+import 'package:daily_you/widgets/entry_media_preview.dart';
 import 'package:flutter/material.dart';
 import 'package:daily_you/widgets/mood_icon.dart';
 import 'package:provider/provider.dart';
@@ -94,8 +94,8 @@ class EntryDayCell extends StatelessWidget {
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.all(Radius.circular(8))),
                       clipBehavior: Clip.antiAlias,
-                      child: LocalImageLoader(
-                        imagePath: image.imgPath,
+                      child: EntryMediaPreview(
+                        media: image,
                         cacheSize: 100,
                       )),
                 ),

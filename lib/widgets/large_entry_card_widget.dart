@@ -5,9 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:daily_you/l10n/generated/app_localizations.dart';
 import 'package:intl/intl.dart';
 import 'package:daily_you/models/entry.dart';
+import 'package:daily_you/widgets/entry_media_preview.dart';
 import 'package:daily_you/widgets/mood_icon.dart';
-import 'package:markdown_widget/markdown_widget.dart';
-import 'local_image_loader.dart';
 
 class LargeEntryCardWidget extends StatelessWidget {
   const LargeEntryCardWidget(
@@ -43,8 +42,8 @@ class LargeEntryCardWidget extends StatelessWidget {
                     children: [
                   ClipRRect(
                       borderRadius: BorderRadius.circular(12),
-                      child: LocalImageLoader(
-                        imagePath: images.first.imgPath,
+                      child: EntryMediaPreview(
+                        media: images.first,
                       )),
                   if (images.length > 1)
                     Positioned(

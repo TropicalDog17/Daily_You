@@ -4,6 +4,7 @@ import 'package:daily_you/database/image_storage.dart';
 import 'package:daily_you/file_layer.dart';
 import 'package:daily_you/layouts/fast_page_view_scroll_physics.dart';
 import 'package:daily_you/models/image.dart';
+import 'package:daily_you/widgets/inline_video_player.dart';
 import 'package:extended_image/extended_image.dart';
 import 'package:flutter/material.dart';
 import 'package:media_scanner/media_scanner.dart';
@@ -49,9 +50,18 @@ class _ImageViewPageState extends State<ImageViewPage> {
           _currentPageNotifier.value = newIndex;
         },
         itemBuilder: (context, currentIndex) {
+          final media = widget.images[currentIndex];
+          if (media.hasMotion && media.videoPath != null) {
+            return Center(
+              child: InlineVideoPlayer(
+                videoPath: media.videoPath!,
+                autoplay: true,
+              ),
+            );
+          }
           return FutureBuilder(
             future: ImageStorage.instance.getBytes(
-              widget.images[currentIndex].imgPath,
+              media.imgPath,
             ),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
@@ -99,12 +109,20 @@ class _ImageViewPageState extends State<ImageViewPage> {
           return IconButton(
             icon: const Icon(Icons.share_rounded),
             onPressed: () async {
-              final currentImage = widget.images[currentIndex].imgPath;
-              var bytes = await ImageStorage.instance.getBytes(currentImage);
+              final currentMedia = widget.images[currentIndex];
+              final currentPath =
+                  (currentMedia.hasMotion && currentMedia.videoPath != null)
+                      ? currentMedia.videoPath!
+                      : currentMedia.imgPath;
+              final mimeType =
+                  (currentMedia.hasMotion && currentMedia.videoPath != null)
+                      ? "video/*"
+                      : "images/*";
+              var bytes = await ImageStorage.instance.getBytes(currentPath);
               if (bytes != null) {
                 await Share.shareXFiles(
-                  [XFile.fromData(bytes, mimeType: "images/*")],
-                  fileNameOverrides: [currentImage],
+                  [XFile.fromData(bytes, mimeType: mimeType)],
+                  fileNameOverrides: [currentPath],
                 );
               }
             },
@@ -124,8 +142,12 @@ class _ImageViewPageState extends State<ImageViewPage> {
           return IconButton(
             icon: const Icon(Icons.download_rounded),
             onPressed: () async {
-              final currentImage = widget.images[currentIndex].imgPath;
-              var bytes = await ImageStorage.instance.getBytes(currentImage);
+              final currentMedia = widget.images[currentIndex];
+              final currentPath =
+                  (currentMedia.hasMotion && currentMedia.videoPath != null)
+                      ? currentMedia.videoPath!
+                      : currentMedia.imgPath;
+              var bytes = await ImageStorage.instance.getBytes(currentPath);
               if (bytes != null) {
                 String? saveDir;
                 try {
@@ -136,7 +158,7 @@ class _ImageViewPageState extends State<ImageViewPage> {
                 if (saveDir == null) return;
                 var newImageName = await FileLayer.createFile(
                   saveDir,
-                  currentImage,
+                  currentPath,
                   bytes,
                 );
                 if (newImageName != null) {

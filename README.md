@@ -64,5 +64,43 @@ Everyone should have access to a journal! **Daily You** uses [Weblate](https://w
 ## Development
 The full development environment is defined using [Nix](https://nixos.org/). Simply, install the [Nix Package Manager](https://nixos.org/download/), clone the repository, enter the project directory, and run `nix develop`, that's it! Alternatively, **Daily You** is built using Flutter. You can directly [install Flutter](https://docs.flutter.dev/get-started/install), clone the repository, enter the project directory, and run `flutter pub get`.
 
+### iOS — Simulator & Build
+
+**Prerequisites**
+- [Xcode](https://developer.apple.com/xcode/) installed (includes iOS Simulator)
+- [CocoaPods](https://cocoapods.org/) (`gem install cocoapods` or `brew install cocoapods`)
+- Flutter installed and on your PATH (`flutter doctor` to verify)
+
+**Setup**
+```bash
+git clone https://github.com/Demizo/Daily_You.git
+cd Daily_You
+flutter pub get
+cd ios && pod install && cd ..
+```
+
+**Run on iOS Simulator**
+```bash
+# List available simulators
+flutter devices
+
+# Launch the app on the default iOS simulator
+flutter run -d iPhone
+```
+You can also open `ios/Runner.xcworkspace` in Xcode, select a simulator from the device dropdown, and press **Run (⌘R)**.
+
+**Build**
+```bash
+# Debug build
+flutter build ios --debug --no-codesign
+
+# Release build (requires Apple Developer signing)
+flutter build ios --release
+```
+The release `.app` bundle will be in `build/ios/iphoneos/`. To generate an IPA for distribution, use Xcode's **Product > Archive** workflow or:
+```bash
+flutter build ipa
+```
+
 ## License
 This software is free software licensed under the GNU General Public License 3.0.

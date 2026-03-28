@@ -27,6 +27,25 @@ import 'package:provider/provider.dart';
 import 'package:timezone/data/latest.dart' as tz_data;
 import 'package:timezone/timezone.dart' as tz;
 
+({String title, String description}) _resolveReminderContent({
+  required String defaultTitle,
+  required String defaultDescription,
+}) {
+  final shouldUseStreakReminder =
+      ConfigProvider.instance.get(ConfigKey.streakRiskReminder) == true;
+  final hasTodayEntry =
+      EntriesProvider.instance.getEntryForDate(DateTime.now()) != null;
+  final (currentStreak, _, _) = EntriesProvider.instance.getStreaks();
+
+  if (shouldUseStreakReminder && !hasTodayEntry && currentStreak > 0) {
+    return (
+      title: "Don't break your $currentStreak-day streak!",
+      description: "Log today's entry to keep your streak alive.",
+    );
+  }
+  return (title: defaultTitle, description: defaultDescription);
+}
+
 @pragma('vm:entry-point')
 void callbackDispatcher() async {
   await ConfigProvider.instance.init();
@@ -61,15 +80,17 @@ void callbackDispatcher() async {
       android: androidPlatformChannelSpecifics,
     );
 
-    if (title != null && description != null) {
-      await flutterLocalNotificationsPlugin.show(
-        0,
-        title,
-        description,
-        platformChannelSpecifics,
-        payload: DateTime.now().toIso8601String(),
-      );
-    }
+    final reminderContent = _resolveReminderContent(
+      defaultTitle: title ?? "Log Today!",
+      defaultDescription: description ?? "Your daily reminder is ready.",
+    );
+    await flutterLocalNotificationsPlugin.show(
+      0,
+      reminderContent.title,
+      reminderContent.description,
+      platformChannelSpecifics,
+      payload: DateTime.now().toIso8601String(),
+    );
   }
   AppDatabase.instance.close();
   setAlarm(firstSet: false);
@@ -110,17 +131,17 @@ void main() async {
     MultiProvider(
       providers: [
         ChangeNotifierProvider<ThemeModeProvider>(create: (_) => themeProvider),
-        ChangeNotifierProvider<EntriesProvider>(
-          create: (_) => EntriesProvider.instance,
+        ChangeNotifierProvider<EntriesProvider>.value(
+          value: EntriesProvider.instance,
         ),
-        ChangeNotifierProvider<EntryImagesProvider>(
-          create: (_) => EntryImagesProvider.instance,
+        ChangeNotifierProvider<EntryImagesProvider>.value(
+          value: EntryImagesProvider.instance,
         ),
-        ChangeNotifierProvider<TemplatesProvider>(
-          create: (_) => TemplatesProvider.instance,
+        ChangeNotifierProvider<TemplatesProvider>.value(
+          value: TemplatesProvider.instance,
         ),
-        ChangeNotifierProvider<ConfigProvider>(
-          create: (_) => ConfigProvider.instance,
+        ChangeNotifierProvider<ConfigProvider>.value(
+          value: ConfigProvider.instance,
         ),
       ],
       builder: (context, child) => const MainApp(),

@@ -18,7 +18,14 @@
       "Bash(gh label:*)",
       "mcp__serena__list_dir",
       "Bash(ls -la /Users/mac/personal/Daily_You/lib/pages/*.dart)",
-      "mcp__serena__read_memory"
+      "mcp__serena__read_memory",
+      "Bash(flutter devices:*)",
+      "Bash(xcodebuild -version)",
+      "Bash(flutter doctor:*)",
+      "Bash(xcrun simctl:*)",
+      "Bash(xcodebuild -downloadPlatform iOS)",
+      "Bash(xcodebuild -downloadAllPreviouslySelectedPlatforms)",
+      "Bash(xcodebuild -downloadPlatform iOS -buildVersion 22A3351)"
     ]
   }
 }

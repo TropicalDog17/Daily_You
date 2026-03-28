@@ -7,15 +7,15 @@ import 'package:daily_you/models/image.dart';
 import 'package:daily_you/providers/entries_provider.dart';
 import 'package:daily_you/providers/entry_images_provider.dart';
 import 'package:daily_you/time_manager.dart';
+import 'package:daily_you/widgets/entry_media_preview.dart';
+import 'package:daily_you/widgets/inline_video_player.dart';
 import 'package:daily_you/widgets/scaled_markdown.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:daily_you/l10n/generated/app_localizations.dart';
 import 'package:daily_you/pages/edit_entry_page.dart';
 import 'package:daily_you/pages/image_view_page.dart';
-import 'package:daily_you/widgets/local_image_loader.dart';
 import 'package:daily_you/widgets/mood_icon.dart';
-import 'package:markdown_widget/markdown_widget.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -107,8 +107,8 @@ class _EntryDetailPageState extends State<EntryDetailPage> {
                     AddEditEntryPage(entry: entry, images: images),
                 transitionsBuilder:
                     (context, animation, secondaryAnimation, child) {
-                      return FadeTransition(opacity: animation, child: child);
-                    },
+                  return FadeTransition(opacity: animation, child: child);
+                },
                 transitionDuration: const Duration(milliseconds: 200),
               ),
             );
@@ -157,14 +157,21 @@ class _EntryDetailPageState extends State<EntryDetailPage> {
                   "$sharedText${DateFormat.yMMMEd(TimeManager.currentLocale(context)).format(entry.timeCreate)}\n${entry.text}";
 
               if (images.isNotEmpty) {
-                // Share Image
-                var bytes = await ImageStorage.instance.getBytes(
-                  images.first.imgPath,
-                );
+                final firstMedia = images.first;
+                final sharePath =
+                    (firstMedia.hasMotion && firstMedia.videoPath != null)
+                        ? firstMedia.videoPath!
+                        : firstMedia.imgPath;
+                final mimeType =
+                    (firstMedia.hasMotion && firstMedia.videoPath != null)
+                        ? "video/*"
+                        : "images/*";
+
+                var bytes = await ImageStorage.instance.getBytes(sharePath);
                 if (bytes != null) {
                   await Share.shareXFiles(
-                    [XFile.fromData(bytes, mimeType: "images/*")],
-                    fileNameOverrides: [images.first.imgPath],
+                    [XFile.fromData(bytes, mimeType: mimeType)],
+                    fileNameOverrides: [sharePath],
                     text: sharedText,
                   );
                 }
@@ -212,7 +219,11 @@ class EntryDetails extends StatelessWidget {
                     width: 220,
                     child: Card.filled(
                       clipBehavior: Clip.antiAlias,
-                      child: LocalImageLoader(imagePath: images.first.imgPath),
+                      child: images.first.hasMotion &&
+                              images.first.videoPath != null
+                          ? InlineVideoPlayer(
+                              videoPath: images.first.videoPath!)
+                          : EntryMediaPreview(media: images.first),
                     ),
                   ),
                 ),
@@ -306,7 +317,7 @@ class EntryDetails extends StatelessWidget {
                             width: imageSize,
                             child: Card.filled(
                               clipBehavior: Clip.antiAlias,
-                              child: LocalImageLoader(imagePath: image.imgPath),
+                              child: EntryMediaPreview(media: image),
                             ),
                           ),
                         ),
@@ -346,7 +357,7 @@ class EntryDetails extends StatelessWidget {
                     width: imageSize,
                     child: Card.filled(
                       clipBehavior: Clip.antiAlias,
-                      child: LocalImageLoader(imagePath: images[index].imgPath),
+                      child: EntryMediaPreview(media: images[index]),
                     ),
                   ),
                 ),

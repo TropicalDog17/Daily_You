@@ -57,14 +57,33 @@ class ExportUtils {
 
         for (EntryImage image in images) {
           final bytes = await ImageStorage.instance.getBytes(image.imgPath);
-          final prettyName =
-              "image_${DateFormat("yyyy-MM-dd", TimeManager.currentLocale(context)).format(entry.timeCreate)}_${image.imgRank}${extension(image.imgPath)}";
+          final baseName =
+              "${DateFormat("yyyy-MM-dd", TimeManager.currentLocale(context)).format(entry.timeCreate)}_${image.imgRank}";
+          final prettyName = "image_$baseName${extension(image.imgPath)}";
           if (bytes != null) {
-            noteBody.writeln('![](Images/$prettyName)');
+            if (image.hasMotion) {
+              noteBody.writeln(
+                  '[${image.isLivePhoto ? "Live Photo" : "Video"}](Images/$prettyName)');
+            } else {
+              noteBody.writeln('![](Images/$prettyName)');
+            }
 
             await FileLayer.createFile(
                 tempExportImageFolder.path, prettyName, bytes,
                 useExternalPath: false);
+          }
+          if (image.videoPath != null) {
+            final videoBytes = await ImageStorage.instance.getBytes(
+              image.videoPath!,
+            );
+            if (videoBytes != null) {
+              final prettyVideoName =
+                  "video_$baseName${extension(image.videoPath!)}";
+              noteBody.writeln('[Motion Clip](Images/$prettyVideoName)');
+              await FileLayer.createFile(
+                  tempExportImageFolder.path, prettyVideoName, videoBytes,
+                  useExternalPath: false);
+            }
           }
         }
 

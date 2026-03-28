@@ -64,8 +64,8 @@ class _AddEditEntryPageState extends State<AddEditEntryPage>
     if (widget.entry == null) {
       var createTime =
           (TimeManager.isToday(widget.overrideCreateDate ?? DateTime.now()))
-          ? DateTime.now()
-          : (widget.overrideCreateDate ?? DateTime.now());
+              ? DateTime.now()
+              : (widget.overrideCreateDate ?? DateTime.now());
       _entry = await EntriesProvider.instance.createNewEntry(createTime);
       _newEntry = true;
     } else {
@@ -253,14 +253,14 @@ class _AddEditEntryPageState extends State<AddEditEntryPage>
         );
 
   Widget _deleteButton() => IconButton(
-    icon: const Icon(Icons.delete),
-    onPressed: () => _showDeleteEntryPopup(),
-  );
+        icon: const Icon(Icons.delete),
+        onPressed: () => _showDeleteEntryPopup(),
+      );
 
   Widget _saveButton() => IconButton(
-    icon: const Icon(Icons.check_rounded),
-    onPressed: () => Navigator.of(context).pop(),
-  );
+        icon: const Icon(Icons.check_rounded),
+        onPressed: () => Navigator.of(context).pop(),
+      );
 
   Widget _changeDateButton() {
     final theme = Theme.of(context);
@@ -342,6 +342,9 @@ class _AddEditEntryPageState extends State<AddEditEntryPage>
     var entryImages = EntryImagesProvider.instance.getForEntry(entry);
     for (EntryImage image in entryImages) {
       await ImageStorage.instance.delete(image.imgPath);
+      if (image.videoPath != null) {
+        await ImageStorage.instance.delete(image.videoPath!);
+      }
       await EntryImagesProvider.instance.remove(image);
     }
     // Delete entry
@@ -366,8 +369,14 @@ class _AddEditEntryPageState extends State<AddEditEntryPage>
       if (matchingImage == null) {
         // Delete image
         await ImageStorage.instance.delete(existingImage.imgPath);
+        if (existingImage.videoPath != null) {
+          await ImageStorage.instance.delete(existingImage.videoPath!);
+        }
         await EntryImagesProvider.instance.remove(existingImage);
-      } else if (matchingImage.imgRank != existingImage.imgRank) {
+      } else if (matchingImage.imgRank != existingImage.imgRank ||
+          matchingImage.mediaType != existingImage.mediaType ||
+          matchingImage.videoPath != existingImage.videoPath ||
+          matchingImage.imgPath != existingImage.imgPath) {
         await EntryImagesProvider.instance.update(matchingImage);
       }
     }
@@ -384,8 +393,8 @@ class _AddEditEntryPageState extends State<AddEditEntryPage>
     }
   }
 
-  Future<void> _addImage(List<String> imgPaths) async {
-    for (var imgPath in imgPaths) {
+  Future<void> _addImage(List<PickedEntryMedia> medias) async {
+    for (var media in medias) {
       // Add image to the end by giving it the lowest rank
       for (var image in _currentImages) {
         image.imgRank += 1;
@@ -393,7 +402,9 @@ class _AddEditEntryPageState extends State<AddEditEntryPage>
       _currentImages.add(
         EntryImage(
           entryId: id,
-          imgPath: imgPath,
+          imgPath: media.imgPath,
+          mediaType: media.mediaType,
+          videoPath: media.videoPath,
           imgRank: 0,
           timeCreate: DateTime.now(),
         ),

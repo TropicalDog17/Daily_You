@@ -41,7 +41,7 @@ class AppDatabase {
 
   Future<void> open() async {
     _database = await openDatabase(_internalPath!,
-        version: 3, onCreate: _createDatabase, onUpgrade: _onUpgrade);
+        version: 4, onCreate: _createDatabase, onUpgrade: _onUpgrade);
 
     await EntriesProvider.instance.load();
     await EntryImagesProvider.instance.load();
@@ -263,6 +263,8 @@ CREATE TABLE $imagesTable (
     ${EntryImageFields.id} INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
     ${EntryImageFields.entryId} INTEGER NOT NULL,
     ${EntryImageFields.imgPath} TEXT NOT NULL,
+    ${EntryImageFields.mediaType} TEXT NOT NULL DEFAULT '${EntryMediaType.image}',
+    ${EntryImageFields.videoPath} TEXT,
     ${EntryImageFields.imgRank} INTEGER NOT NULL,
     ${EntryImageFields.timeCreate} DATETIME NOT NULL DEFAULT (DATETIME('now')),
     FOREIGN KEY (${EntryImageFields.entryId}) REFERENCES $entriesTable (id)
@@ -334,6 +336,16 @@ FROM old_entries;
 DROP TABLE old_entries;
     ''');
       });
+    }
+    if (oldVersion <= 3) {
+      await db.execute('''
+ALTER TABLE $imagesTable
+ADD COLUMN ${EntryImageFields.mediaType} TEXT NOT NULL DEFAULT '${EntryMediaType.image}';
+''');
+      await db.execute('''
+ALTER TABLE $imagesTable
+ADD COLUMN ${EntryImageFields.videoPath} TEXT;
+''');
     }
   }
 }

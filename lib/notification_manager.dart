@@ -1,6 +1,8 @@
 import 'dart:io';
 import 'package:android_alarm_manager_plus/android_alarm_manager_plus.dart';
+import 'package:daily_you/config_provider.dart';
 import 'package:daily_you/main.dart';
+import 'package:daily_you/providers/entries_provider.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -121,8 +123,18 @@ class NotificationManager {
   }
 
   Future<void> _scheduleIOSNotification(DateTime scheduledTime) async {
-    final notificationTitle = 'Log Today!';
-    const notificationDescription = 'Your daily reminder is ready.';
+    String notificationTitle = 'Log Today!';
+    String notificationDescription = 'Your daily reminder is ready.';
+
+    final shouldUseStreakReminder =
+        ConfigProvider.instance.get(ConfigKey.streakRiskReminder) == true;
+    final hasTodayEntry =
+        EntriesProvider.instance.getEntryForDate(DateTime.now()) != null;
+    final (currentStreak, _, _) = EntriesProvider.instance.getStreaks();
+    if (shouldUseStreakReminder && !hasTodayEntry && currentStreak > 0) {
+      notificationTitle = "Don't break your $currentStreak-day streak!";
+      notificationDescription = "Log today's entry to keep your streak alive.";
+    }
 
     await _notifications!.zonedSchedule(
       0,

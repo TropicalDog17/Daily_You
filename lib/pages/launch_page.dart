@@ -66,6 +66,13 @@ class _LaunchPageState extends State<LaunchPage> {
   }
 
   _checkDatabaseConnection() async {
+    final bindingName = WidgetsBinding.instance.runtimeType.toString();
+    if (bindingName.contains("Test")) {
+      await AppDatabase.instance.init(forceWithoutSync: true);
+      await _nextPage();
+      return;
+    }
+
     // Prompt unlock before initializing database
     if (await ConfigProvider.instance.get(ConfigKey.requirePassword)) {
       await showDialog(

@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:daily_you/config_provider.dart';
 import 'package:daily_you/layouts/fast_page_view_scroll_physics.dart';
+import 'package:daily_you/pages/compilation_page.dart';
 import 'package:daily_you/pages/settings/notification_settings.dart';
 import 'package:easy_debounce/easy_debounce.dart';
 import 'package:flutter/material.dart';
@@ -79,7 +80,8 @@ class _MobileScaffoldState extends State<MobileScaffold> {
               Text(
                 AppLocalizations.of(
                   context,
-                )!.settingsNotificationsPermissionsPrompt,
+                )!
+                    .settingsNotificationsPermissionsPrompt,
               ),
               Divider(),
               ...NotificationSettings.buildCoreReminderSettings(context),
@@ -129,6 +131,18 @@ class _MobileScaffoldState extends State<MobileScaffold> {
                 icon: const Icon(Icons.notifications_off_rounded),
                 onPressed: () async {
                   _showNotificationOnboardingPopup();
+                },
+              ),
+            if (Platform.isAndroid || Platform.isIOS)
+              IconButton(
+                icon: const Icon(Icons.movie_creation_outlined),
+                onPressed: () async {
+                  await Navigator.of(context).push(
+                    MaterialPageRoute(
+                      allowSnapshotting: false,
+                      builder: (context) => const CompilationPage(),
+                    ),
+                  );
                 },
               ),
             IconButton(

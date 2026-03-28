@@ -5,9 +5,8 @@ import 'package:daily_you/widgets/scaled_markdown.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:daily_you/models/entry.dart';
+import 'package:daily_you/widgets/entry_media_preview.dart';
 import 'package:daily_you/widgets/mood_icon.dart';
-import 'package:markdown_widget/markdown_widget.dart';
-import 'local_image_loader.dart';
 
 class EntryCardWidget extends StatelessWidget {
   const EntryCardWidget(
@@ -43,8 +42,8 @@ class EntryCardWidget extends StatelessWidget {
                   clipBehavior: Clip.antiAlias,
                   children: [
                     (images.isNotEmpty && !hideImage)
-                        ? LocalImageLoader(
-                            imagePath: images.first.imgPath,
+                        ? EntryMediaPreview(
+                            media: images.first,
                           )
                         : (entry.text.isNotEmpty)
                             ? Padding(

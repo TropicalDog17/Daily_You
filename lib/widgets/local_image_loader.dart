@@ -1,6 +1,7 @@
 import 'package:daily_you/widgets/local_image_cache.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:path/path.dart' show extension;
 
 class LocalImageLoader extends StatefulWidget {
   final String imagePath;
@@ -19,6 +20,19 @@ class LocalImageLoader extends StatefulWidget {
 class _LocalImageLoaderState extends State<LocalImageLoader> {
   Uint8List? _bytes;
   bool _imageNotFound = false;
+
+  bool get _isVideoAsset {
+    final ext = extension(widget.imagePath).toLowerCase();
+    return const {
+      '.mp4',
+      '.mov',
+      '.m4v',
+      '.avi',
+      '.3gp',
+      '.webm',
+      '.mkv',
+    }.contains(ext);
+  }
 
   @override
   void initState() {
@@ -39,6 +53,13 @@ class _LocalImageLoaderState extends State<LocalImageLoader> {
   }
 
   Future<void> _load() async {
+    if (_isVideoAsset) {
+      if (mounted) {
+        setState(() => _imageNotFound = true);
+      }
+      return;
+    }
+
     final bytes = await LocalImageCache.instance
         .getResizedImageBytes(widget.imagePath, widget.cacheSize);
     if (mounted) {
@@ -68,6 +89,14 @@ class _LocalImageLoaderState extends State<LocalImageLoader> {
       );
     } else {
       if (_imageNotFound) {
+        if (_isVideoAsset) {
+          return const Center(
+            child: Icon(
+              Icons.videocam_rounded,
+              size: 36,
+            ),
+          );
+        }
         // Image not found
         return const Center(
           child: Icon(
