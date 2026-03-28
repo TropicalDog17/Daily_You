@@ -60,7 +60,7 @@ class MoodByDayChart extends StatelessWidget {
                   topTitles: const AxisTitles(),
                 ),
                 borderData: FlBorderData(
-                    show: true,
+                    show: false,
                     border: Border.symmetric(
                         horizontal: BorderSide(
                       color: Theme.of(context)
@@ -78,7 +78,7 @@ class MoodByDayChart extends StatelessWidget {
                     color: Theme.of(context)
                         .colorScheme
                         .onSurface
-                        .withValues(alpha: 0.2),
+                        .withValues(alpha: 0.16),
                     strokeWidth: 1,
                   ),
                 ),
@@ -102,6 +102,12 @@ class MoodByDayChart extends StatelessWidget {
             width: 16,
             fromY: -2,
             toY: mood,
+            borderRadius: mood >= -2
+                ? const BorderRadius.only(
+                    topLeft: Radius.circular(8),
+                    topRight: Radius.circular(8),
+                  )
+                : BorderRadius.zero,
           ),
         ],
       );

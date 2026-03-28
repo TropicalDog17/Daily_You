@@ -2,6 +2,7 @@ import 'package:daily_you/models/entry.dart';
 import 'package:daily_you/providers/entries_provider.dart';
 import 'package:daily_you/time_manager.dart';
 import 'package:daily_you/widgets/mood_icon.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:daily_you/l10n/generated/app_localizations.dart';
 import 'package:fl_chart/fl_chart.dart';
@@ -84,23 +85,52 @@ class _MoodByMonthChartState extends State<MoodByMonthChart> {
               padding: const EdgeInsets.all(8.0),
               child: AspectRatio(
                 aspectRatio: 2,
-                child: Card(
-                    child: Center(
-                        child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.auto_graph_rounded,
-                      size: 100,
-                      color: Theme.of(context).disabledColor,
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(24),
+                    gradient: LinearGradient(
+                      colors: [
+                        Theme.of(context)
+                            .colorScheme
+                            .surfaceContainerHighest
+                            .withValues(alpha: 0.95),
+                        Theme.of(context)
+                            .colorScheme
+                            .surfaceContainerHigh
+                            .withValues(alpha: 0.82),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                     ),
-                    Text(
-                      AppLocalizations.of(context)!.statisticsNotEnoughData,
-                      style: TextStyle(
-                          fontSize: 18, color: Theme.of(context).disabledColor),
-                    )
-                  ],
-                ))),
+                    border: Border.all(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .outline
+                          .withValues(alpha: 0.25),
+                    ),
+                  ),
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          CupertinoIcons.chart_bar,
+                          size: 54,
+                          color: Theme.of(context).disabledColor,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          AppLocalizations.of(context)!.statisticsNotEnoughData,
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                            color: Theme.of(context).disabledColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ),
             )
           : Column(
@@ -130,14 +160,24 @@ class _MoodByMonthChartState extends State<MoodByMonthChart> {
         if (_totalPages() > 1)
           IconButton(
             onPressed: currentPage < _totalPages() - 1 ? _goToNextPage : null,
-            icon: const Icon(Icons.arrow_back_ios_new_rounded),
+            icon: Icon(
+              Theme.of(context).platform == TargetPlatform.iOS
+                  ? CupertinoIcons.chevron_left
+                  : Icons.arrow_back_ios_new_rounded,
+            ),
           ),
         Text(
-            "${_formatMonthYear(keys.first, context)} - ${_formatMonthYear(keys.last, context)}"),
+          "${_formatMonthYear(keys.first, context)} - ${_formatMonthYear(keys.last, context)}",
+          style: const TextStyle(fontWeight: FontWeight.w600),
+        ),
         if (_totalPages() > 1)
           IconButton(
             onPressed: currentPage > 0 ? _goToPreviousPage : null,
-            icon: const Icon(Icons.arrow_forward_ios_rounded),
+            icon: Icon(
+              Theme.of(context).platform == TargetPlatform.iOS
+                  ? CupertinoIcons.chevron_right
+                  : Icons.arrow_forward_ios_rounded,
+            ),
           ),
       ],
     );
@@ -179,17 +219,25 @@ class _MoodByMonthChartState extends State<MoodByMonthChart> {
         if (spots.whereType<FlSpot>().toList().isNotEmpty)
           LineChartBarData(
             spots: spots.whereType<FlSpot>().toList(),
-            isCurved: false,
+            isCurved: true,
             color: color,
-            barWidth: 4,
+            barWidth: 3,
             isStrokeCapRound: true,
             dotData: FlDotData(
               show: true,
               getDotPainter: (p0, p1, p2, p3) {
-                return FlDotCirclePainter(color: color, radius: 6);
+                return FlDotCirclePainter(
+                  color: color,
+                  radius: 4.2,
+                  strokeColor: Theme.of(context).colorScheme.surface,
+                  strokeWidth: 2,
+                );
               },
             ),
-            belowBarData: BarAreaData(show: false),
+            belowBarData: BarAreaData(
+              show: true,
+              color: color.withValues(alpha: 0.14),
+            ),
           ),
       ],
       titlesData: FlTitlesData(
@@ -237,12 +285,18 @@ class _MoodByMonthChartState extends State<MoodByMonthChart> {
         drawVerticalLine: true,
         verticalInterval: 1,
         getDrawingHorizontalLine: (value) => FlLine(
-          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.2),
+          color:
+              Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.16),
+          strokeWidth: 1,
+        ),
+        getDrawingVerticalLine: (value) => FlLine(
+          color:
+              Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.08),
           strokeWidth: 1,
         ),
       ),
       borderData: FlBorderData(
-          show: true,
+          show: false,
           border: Border.symmetric(
               horizontal: BorderSide(
             color:
