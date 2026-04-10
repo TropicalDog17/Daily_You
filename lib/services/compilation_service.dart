@@ -53,6 +53,8 @@ class CompilationService {
 
   CompilationService._init();
 
+  String? _cachedVideoEncoderArgs;
+
   Future<String> generateCompilation({
     required List<CompilationClip> clips,
     double clipDurationSeconds = 1.0,
@@ -61,6 +63,8 @@ class CompilationService {
     if (clips.isEmpty) {
       throw ArgumentError('No clips selected for compilation');
     }
+
+    final videoEncoderArgs = await _resolveVideoEncoderArgs();
 
     final tempRoot = await getTemporaryDirectory();
     final runDirectory = Directory(
@@ -93,6 +97,7 @@ class CompilationService {
           media: clip.media,
           outputPath: segmentPath,
           clipDurationSeconds: clipDurationSeconds,
+          videoEncoderArgs: videoEncoderArgs,
           onProgress: (phaseFraction) {
             final currentWorkMs = completedWorkMs +
                 (segmentDurationMs * phaseFraction.clamp(0.0, 1.0).toDouble());
@@ -126,6 +131,7 @@ class CompilationService {
             outputPath: outputPath,
             clipDurationSeconds: clipDurationSeconds,
             transitionDurationSeconds: transitionDurationSeconds,
+            videoEncoderArgs: videoEncoderArgs,
           ),
           expectedDurationMs: finalRenderDurationMs,
           onProgress: (phaseFraction) {
@@ -174,6 +180,7 @@ class CompilationService {
     required String outputPath,
     required double clipDurationSeconds,
     required double transitionDurationSeconds,
+    required String videoEncoderArgs,
   }) {
     final inputs = segments.map((segment) => '-i ${_quote(segment)}').join(' ');
 
@@ -194,7 +201,7 @@ class CompilationService {
     final filterComplex = filterParts.join(';');
 
     return '-y $inputs -filter_complex "$filterComplex" '
-        '-map $finalMap -c:v libx264 -preset veryfast -pix_fmt yuv420p '
+        '-map $finalMap $videoEncoderArgs -pix_fmt yuv420p '
         '-movflags +faststart -an ${_quote(outputPath)}';
   }
 
@@ -202,6 +209,7 @@ class CompilationService {
     required EntryImage media,
     required String outputPath,
     required double clipDurationSeconds,
+    required String videoEncoderArgs,
     required void Function(double phaseFraction) onProgress,
   }) async {
     final inputName =
@@ -223,18 +231,38 @@ class CompilationService {
     if (media.mediaType == 'video' || media.mediaType == 'live_photo') {
       await _runCommand(
         '-y -i ${_quote(inputPath)} -t $clipDurationSeconds '
-        '-vf "$baseFilter" -c:v libx264 -preset veryfast -an ${_quote(outputPath)}',
+        '-vf "$baseFilter" $videoEncoderArgs -an ${_quote(outputPath)}',
         expectedDurationMs: clipDurationSeconds * 1000,
         onProgress: onProgress,
       );
     } else {
       await _runCommand(
         '-y -loop 1 -i ${_quote(inputPath)} -t $clipDurationSeconds '
-        '-vf "$baseFilter" -c:v libx264 -preset veryfast -an ${_quote(outputPath)}',
+        '-vf "$baseFilter" $videoEncoderArgs -an ${_quote(outputPath)}',
         expectedDurationMs: clipDurationSeconds * 1000,
         onProgress: onProgress,
       );
     }
+  }
+
+  Future<String> _resolveVideoEncoderArgs() async {
+    final cachedValue = _cachedVideoEncoderArgs;
+    if (cachedValue != null) {
+      return cachedValue;
+    }
+
+    const probeCommand = '-hide_banner -f lavfi -i '
+        'color=c=black:s=16x16:d=0.1 -frames:v 1 -c:v libx264 -f null -';
+    final probeSession = await FFmpegKit.execute(probeCommand);
+    final returnCode = await probeSession.getReturnCode();
+
+    if (ReturnCode.isSuccess(returnCode)) {
+      _cachedVideoEncoderArgs = '-c:v libx264 -preset veryfast';
+      return _cachedVideoEncoderArgs!;
+    }
+
+    _cachedVideoEncoderArgs = '-c:v mpeg4 -q:v 5';
+    return _cachedVideoEncoderArgs!;
   }
 
   Future<void> _runCommand(
