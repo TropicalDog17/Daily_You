@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:ui' as ui;
 
 import 'package:daily_you/config_provider.dart';
@@ -7,6 +8,7 @@ import 'package:daily_you/pages/entry_detail_page.dart';
 import 'package:daily_you/providers/entries_provider.dart';
 import 'package:daily_you/time_manager.dart';
 import 'package:daily_you/widgets/year_month_picker.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:daily_you/widgets/entry_day_cell.dart';
 import 'package:flutter_svg/svg.dart';
@@ -310,12 +312,14 @@ class CalendarViewModeSelector extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final configProvider = Provider.of<ConfigProvider>(context);
+    final isIOS = Platform.isIOS;
+    final isMood = configProvider.get(ConfigKey.calendarViewMode) == "mood";
     return IconButton(
         onPressed: () async {
           await setViewMode();
         },
-        icon: configProvider.get(ConfigKey.calendarViewMode) == "mood"
-            ? const Icon(Icons.image_rounded)
-            : const Icon(Icons.mood_rounded));
+        icon: isMood
+            ? Icon(isIOS ? CupertinoIcons.photo : Icons.image_rounded)
+            : Icon(isIOS ? CupertinoIcons.smiley : Icons.mood_rounded));
   }
 }

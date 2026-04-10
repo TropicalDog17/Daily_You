@@ -1103,6 +1103,408 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Mood'**
   String get tagMoodTitle;
+
+  /// No description provided for @settingsMediaTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Media'**
+  String get settingsMediaTitle;
+
+  /// No description provided for @settingsMediaImportLivePhotoTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Import Live Photos as video'**
+  String get settingsMediaImportLivePhotoTitle;
+
+  /// No description provided for @settingsMediaImportLivePhotoDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'When possible, preserve Live Photo motion as a paired MOV clip.'**
+  String get settingsMediaImportLivePhotoDescription;
+
+  /// No description provided for @settingsMediaMaxVideoDurationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Max picked video duration'**
+  String get settingsMediaMaxVideoDurationTitle;
+
+  /// No description provided for @settingsMediaDurationSeconds.
+  ///
+  /// In en, this message translates to:
+  /// **'{seconds} seconds'**
+  String settingsMediaDurationSeconds(Object seconds);
+
+  /// No description provided for @mediaVideoTrimFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t trim the selected video.'**
+  String get mediaVideoTrimFailed;
+
+  /// No description provided for @mediaVideoTrimmedToDuration.
+  ///
+  /// In en, this message translates to:
+  /// **'Trimmed video to {seconds} seconds.'**
+  String mediaVideoTrimmedToDuration(Object seconds);
+
+  /// No description provided for @compilationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Compilation'**
+  String get compilationTitle;
+
+  /// No description provided for @compilationRangeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Range'**
+  String get compilationRangeTitle;
+
+  /// No description provided for @compilationRangeWeek.
+  ///
+  /// In en, this message translates to:
+  /// **'Week'**
+  String get compilationRangeWeek;
+
+  /// No description provided for @compilationRangeMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'Month'**
+  String get compilationRangeMonth;
+
+  /// No description provided for @compilationRangeYear.
+  ///
+  /// In en, this message translates to:
+  /// **'Year'**
+  String get compilationRangeYear;
+
+  /// No description provided for @compilationRangeCustom.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom'**
+  String get compilationRangeCustom;
+
+  /// No description provided for @compilationRangeValue.
+  ///
+  /// In en, this message translates to:
+  /// **'{start} - {end}'**
+  String compilationRangeValue(Object end, Object start);
+
+  /// No description provided for @compilationClipDurationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Clip duration'**
+  String get compilationClipDurationTitle;
+
+  /// No description provided for @compilationSelectedClipCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Selected clips: {count}'**
+  String compilationSelectedClipCount(Object count);
+
+  /// No description provided for @compilationIncludedEntriesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Included entries'**
+  String get compilationIncludedEntriesTitle;
+
+  /// No description provided for @compilationNoEntriesInRange.
+  ///
+  /// In en, this message translates to:
+  /// **'No entries with media in this range.'**
+  String get compilationNoEntriesInRange;
+
+  /// No description provided for @compilationNoTextFallback.
+  ///
+  /// In en, this message translates to:
+  /// **'(No text)'**
+  String get compilationNoTextFallback;
+
+  /// No description provided for @compilationGenerateAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Generate'**
+  String get compilationGenerateAction;
+
+  /// No description provided for @compilationShareAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Share'**
+  String get compilationShareAction;
+
+  /// No description provided for @compilationSaveAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get compilationSaveAction;
+
+  /// No description provided for @compilationDiscardAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard'**
+  String get compilationDiscardAction;
+
+  /// No description provided for @compilationShareText.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily You compilation'**
+  String get compilationShareText;
+
+  /// No description provided for @compilationSelectAtLeastOneEntry.
+  ///
+  /// In en, this message translates to:
+  /// **'Select at least one entry with media.'**
+  String get compilationSelectAtLeastOneEntry;
+
+  /// No description provided for @compilationProgressPreparing.
+  ///
+  /// In en, this message translates to:
+  /// **'Preparing clips...'**
+  String get compilationProgressPreparing;
+
+  /// No description provided for @compilationProgressEncodingClip.
+  ///
+  /// In en, this message translates to:
+  /// **'Encoding clip {current}/{total}'**
+  String compilationProgressEncodingClip(Object current, Object total);
+
+  /// No description provided for @compilationProgressRenderingFinal.
+  ///
+  /// In en, this message translates to:
+  /// **'Rendering final video'**
+  String get compilationProgressRenderingFinal;
+
+  /// No description provided for @compilationProgressReady.
+  ///
+  /// In en, this message translates to:
+  /// **'Compilation ready'**
+  String get compilationProgressReady;
+
+  /// No description provided for @compilationProgressPercent.
+  ///
+  /// In en, this message translates to:
+  /// **'{percent}%'**
+  String compilationProgressPercent(Object percent);
+
+  /// No description provided for @compilationFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Compilation failed: {error}'**
+  String compilationFailed(Object error);
+
+  /// No description provided for @savedToGalleryMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved to gallery.'**
+  String get savedToGalleryMessage;
+
+  /// No description provided for @yearInReviewTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Year in Review'**
+  String get yearInReviewTitle;
+
+  /// No description provided for @yearInReviewCardSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Generate a highlight reel from your entries.'**
+  String get yearInReviewCardSubtitle;
+
+  /// No description provided for @yearInReviewBannerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Year in Review is ready'**
+  String get yearInReviewBannerTitle;
+
+  /// No description provided for @yearInReviewBannerSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create your highlight reel from last year.'**
+  String get yearInReviewBannerSubtitle;
+
+  /// No description provided for @yearInReviewSelectYearTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Select year'**
+  String get yearInReviewSelectYearTitle;
+
+  /// No description provided for @yearInReviewEntriesCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Entries: {count}'**
+  String yearInReviewEntriesCount(Object count);
+
+  /// No description provided for @yearInReviewEntriesWithMediaCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Entries with media: {count}'**
+  String yearInReviewEntriesWithMediaCount(Object count);
+
+  /// No description provided for @yearInReviewRange.
+  ///
+  /// In en, this message translates to:
+  /// **'Range: {start} - {end}'**
+  String yearInReviewRange(Object end, Object start);
+
+  /// No description provided for @yearInReviewSummaryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Year summary'**
+  String get yearInReviewSummaryTitle;
+
+  /// No description provided for @yearInReviewActiveDaysCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Active days: {count}'**
+  String yearInReviewActiveDaysCount(Object count);
+
+  /// No description provided for @yearInReviewGenerateAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Generate Year in Review'**
+  String get yearInReviewGenerateAction;
+
+  /// No description provided for @yearInReviewSelectedHighlights.
+  ///
+  /// In en, this message translates to:
+  /// **'Selected highlights: {count}'**
+  String yearInReviewSelectedHighlights(Object count);
+
+  /// No description provided for @yearInReviewNoMediaEntries.
+  ///
+  /// In en, this message translates to:
+  /// **'No media entries found for this year.'**
+  String get yearInReviewNoMediaEntries;
+
+  /// No description provided for @yearInReviewShareText.
+  ///
+  /// In en, this message translates to:
+  /// **'My Daily You Year in Review'**
+  String get yearInReviewShareText;
+
+  /// No description provided for @rewindTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Rewind'**
+  String get rewindTitle;
+
+  /// No description provided for @rewindShowAnother.
+  ///
+  /// In en, this message translates to:
+  /// **'Show another'**
+  String get rewindShowAnother;
+
+  /// No description provided for @rewindOpenMemoryHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to open this memory.'**
+  String get rewindOpenMemoryHint;
+
+  /// No description provided for @homeEmptyStateMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'No entries yet. Tap + to start your first memory.'**
+  String get homeEmptyStateMessage;
+
+  /// No description provided for @statsUnlockAfterWeek.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep going! Stats unlock after a week of entries.'**
+  String get statsUnlockAfterWeek;
+
+  /// No description provided for @onboardingSkip.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip'**
+  String get onboardingSkip;
+
+  /// No description provided for @onboardingWelcomeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome to Daily You'**
+  String get onboardingWelcomeTitle;
+
+  /// No description provided for @onboardingWelcomeSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Every day is worth remembering.'**
+  String get onboardingWelcomeSubtitle;
+
+  /// No description provided for @onboardingWelcomeBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Capture one meaningful moment each day and keep it safely on your device.'**
+  String get onboardingWelcomeBody;
+
+  /// No description provided for @onboardingCaptureTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Capture Your Day'**
+  String get onboardingCaptureTitle;
+
+  /// No description provided for @onboardingCaptureSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo, video, or a few words.'**
+  String get onboardingCaptureSubtitle;
+
+  /// No description provided for @onboardingCaptureBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Use Daily You your way: quick note, snapshot, or short clip for a one-second-everyday style memory.'**
+  String get onboardingCaptureBody;
+
+  /// No description provided for @onboardingPrivacyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Private by Default'**
+  String get onboardingPrivacyTitle;
+
+  /// No description provided for @onboardingPrivacySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No account required.'**
+  String get onboardingPrivacySubtitle;
+
+  /// No description provided for @onboardingPrivacyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Everything stays on your device. No cloud dependency, no tracking, no ads.'**
+  String get onboardingPrivacyBody;
+
+  /// No description provided for @onboardingGetStartedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Get Started'**
+  String get onboardingGetStartedTitle;
+
+  /// No description provided for @onboardingEnableReminderPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable daily reminders?'**
+  String get onboardingEnableReminderPrompt;
+
+  /// No description provided for @onboardingDailyReminderTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily reminder'**
+  String get onboardingDailyReminderTitle;
+
+  /// No description provided for @onboardingDailyReminderSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'A gentle nudge to log your day.'**
+  String get onboardingDailyReminderSubtitle;
+
+  /// No description provided for @onboardingContinue.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get onboardingContinue;
+
+  /// No description provided for @onboardingCreateFirstEntry.
+  ///
+  /// In en, this message translates to:
+  /// **'Create your first entry'**
+  String get onboardingCreateFirstEntry;
 }
 
 class _AppLocalizationsDelegate

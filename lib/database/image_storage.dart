@@ -116,6 +116,27 @@ class ImageStorage {
     return bytes;
   }
 
+  Future<String?> getFilePath(String imageName) async {
+    final internalDir = await getInternalFolder();
+    final internalPath = join(internalDir, imageName);
+    if (await FileLayer.exists(internalDir,
+        name: imageName, useExternalPath: false)) {
+      return internalPath;
+    }
+
+    if (usingExternalLocation()) {
+      final bytes = await FileLayer.getFileBytes(_getExternalFolder(),
+          name: imageName, useExternalPath: true);
+      if (bytes != null) {
+        await FileLayer.createFile(internalDir, imageName, bytes,
+            useExternalPath: false);
+        return internalPath;
+      }
+    }
+
+    return null;
+  }
+
   Future<String?> create(String? imageName, Uint8List bytes,
       {DateTime? currTime}) async {
     currTime ??= DateTime.now();
@@ -204,26 +225,30 @@ class ImageStorage {
     for (Entry entry in entries) {
       var images = EntryImagesProvider.instance.getForEntry(entry);
       for (final image in images) {
-        var entryImg = image.imgPath;
+        final mediaPaths = [
+          image.imgPath,
+          if (image.videoPath != null) image.videoPath!
+        ];
+        for (final entryImg in mediaPaths) {
+          entryImages.add(entryImg);
 
-        entryImages.add(entryImg);
+          // Export
+          if (internalImages.contains(entryImg) &&
+              !externalImages.contains(entryImg)) {
+            var bytes = await FileLayer.getFileBytes(internalFolder,
+                name: entryImg, useExternalPath: false);
+            await FileLayer.createFile(externalFolder, entryImg, bytes!,
+                useExternalPath: true);
+          }
 
-        // Export
-        if (internalImages.contains(entryImg) &&
-            !externalImages.contains(entryImg)) {
-          var bytes = await FileLayer.getFileBytes(internalFolder,
-              name: entryImg, useExternalPath: false);
-          await FileLayer.createFile(externalFolder, entryImg, bytes!,
-              useExternalPath: true);
-        }
-
-        // Import
-        if (externalImages.contains(entryImg) &&
-            !internalImages.contains(entryImg)) {
-          var bytes = await FileLayer.getFileBytes(externalFolder,
-              name: entryImg, useExternalPath: true);
-          await FileLayer.createFile(internalFolder, entryImg, bytes!,
-              useExternalPath: false);
+          // Import
+          if (externalImages.contains(entryImg) &&
+              !internalImages.contains(entryImg)) {
+            var bytes = await FileLayer.getFileBytes(externalFolder,
+                name: entryImg, useExternalPath: true);
+            await FileLayer.createFile(internalFolder, entryImg, bytes!,
+                useExternalPath: false);
+          }
         }
         syncedEntries += 1;
         updateStatus?.call("$syncedEntries/${entries.length}");
@@ -238,8 +263,12 @@ class ImageStorage {
 
   Future<bool> _garbageCollectImages() async {
     var entryImages = EntryImagesProvider.instance.images;
-    var entryImageNames =
-        entryImages.map((entryImage) => entryImage.imgPath).toList();
+    var entryImageNames = entryImages
+        .expand((entryImage) => [
+              entryImage.imgPath,
+              if (entryImage.videoPath != null) entryImage.videoPath!,
+            ])
+        .toList();
     // Get all internal photos
     var internalImages = Directory(await getInternalFolder()).list();
     await for (FileSystemEntity fileEntity in internalImages) {

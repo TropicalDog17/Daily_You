@@ -569,4 +569,241 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get tagMoodTitle => 'حس و حال';
+
+  @override
+  String get settingsMediaTitle => 'Media';
+
+  @override
+  String get settingsMediaImportLivePhotoTitle => 'Import Live Photos as video';
+
+  @override
+  String get settingsMediaImportLivePhotoDescription =>
+      'When possible, preserve Live Photo motion as a paired MOV clip.';
+
+  @override
+  String get settingsMediaMaxVideoDurationTitle => 'Max picked video duration';
+
+  @override
+  String settingsMediaDurationSeconds(Object seconds) {
+    return '$seconds seconds';
+  }
+
+  @override
+  String get mediaVideoTrimFailed => 'Couldn\'t trim the selected video.';
+
+  @override
+  String mediaVideoTrimmedToDuration(Object seconds) {
+    return 'Trimmed video to $seconds seconds.';
+  }
+
+  @override
+  String get compilationTitle => 'Compilation';
+
+  @override
+  String get compilationRangeTitle => 'Range';
+
+  @override
+  String get compilationRangeWeek => 'Week';
+
+  @override
+  String get compilationRangeMonth => 'Month';
+
+  @override
+  String get compilationRangeYear => 'Year';
+
+  @override
+  String get compilationRangeCustom => 'Custom';
+
+  @override
+  String compilationRangeValue(Object end, Object start) {
+    return '$start - $end';
+  }
+
+  @override
+  String get compilationClipDurationTitle => 'Clip duration';
+
+  @override
+  String compilationSelectedClipCount(Object count) {
+    return 'Selected clips: $count';
+  }
+
+  @override
+  String get compilationIncludedEntriesTitle => 'Included entries';
+
+  @override
+  String get compilationNoEntriesInRange =>
+      'No entries with media in this range.';
+
+  @override
+  String get compilationNoTextFallback => '(No text)';
+
+  @override
+  String get compilationGenerateAction => 'Generate';
+
+  @override
+  String get compilationShareAction => 'Share';
+
+  @override
+  String get compilationSaveAction => 'Save';
+
+  @override
+  String get compilationDiscardAction => 'Discard';
+
+  @override
+  String get compilationShareText => 'Daily You compilation';
+
+  @override
+  String get compilationSelectAtLeastOneEntry =>
+      'Select at least one entry with media.';
+
+  @override
+  String get compilationProgressPreparing => 'Preparing clips...';
+
+  @override
+  String compilationProgressEncodingClip(Object current, Object total) {
+    return 'Encoding clip $current/$total';
+  }
+
+  @override
+  String get compilationProgressRenderingFinal => 'Rendering final video';
+
+  @override
+  String get compilationProgressReady => 'Compilation ready';
+
+  @override
+  String compilationProgressPercent(Object percent) {
+    return '$percent%';
+  }
+
+  @override
+  String compilationFailed(Object error) {
+    return 'Compilation failed: $error';
+  }
+
+  @override
+  String get savedToGalleryMessage => 'Saved to gallery.';
+
+  @override
+  String get yearInReviewTitle => 'Year in Review';
+
+  @override
+  String get yearInReviewCardSubtitle =>
+      'Generate a highlight reel from your entries.';
+
+  @override
+  String get yearInReviewBannerTitle => 'Year in Review is ready';
+
+  @override
+  String get yearInReviewBannerSubtitle =>
+      'Create your highlight reel from last year.';
+
+  @override
+  String get yearInReviewSelectYearTitle => 'Select year';
+
+  @override
+  String yearInReviewEntriesCount(Object count) {
+    return 'Entries: $count';
+  }
+
+  @override
+  String yearInReviewEntriesWithMediaCount(Object count) {
+    return 'Entries with media: $count';
+  }
+
+  @override
+  String yearInReviewRange(Object end, Object start) {
+    return 'Range: $start - $end';
+  }
+
+  @override
+  String get yearInReviewSummaryTitle => 'Year summary';
+
+  @override
+  String yearInReviewActiveDaysCount(Object count) {
+    return 'Active days: $count';
+  }
+
+  @override
+  String get yearInReviewGenerateAction => 'Generate Year in Review';
+
+  @override
+  String yearInReviewSelectedHighlights(Object count) {
+    return 'Selected highlights: $count';
+  }
+
+  @override
+  String get yearInReviewNoMediaEntries =>
+      'No media entries found for this year.';
+
+  @override
+  String get yearInReviewShareText => 'My Daily You Year in Review';
+
+  @override
+  String get rewindTitle => 'Rewind';
+
+  @override
+  String get rewindShowAnother => 'Show another';
+
+  @override
+  String get rewindOpenMemoryHint => 'Tap to open this memory.';
+
+  @override
+  String get homeEmptyStateMessage =>
+      'No entries yet. Tap + to start your first memory.';
+
+  @override
+  String get statsUnlockAfterWeek =>
+      'Keep going! Stats unlock after a week of entries.';
+
+  @override
+  String get onboardingSkip => 'Skip';
+
+  @override
+  String get onboardingWelcomeTitle => 'Welcome to Daily You';
+
+  @override
+  String get onboardingWelcomeSubtitle => 'Every day is worth remembering.';
+
+  @override
+  String get onboardingWelcomeBody =>
+      'Capture one meaningful moment each day and keep it safely on your device.';
+
+  @override
+  String get onboardingCaptureTitle => 'Capture Your Day';
+
+  @override
+  String get onboardingCaptureSubtitle => 'Photo, video, or a few words.';
+
+  @override
+  String get onboardingCaptureBody =>
+      'Use Daily You your way: quick note, snapshot, or short clip for a one-second-everyday style memory.';
+
+  @override
+  String get onboardingPrivacyTitle => 'Private by Default';
+
+  @override
+  String get onboardingPrivacySubtitle => 'No account required.';
+
+  @override
+  String get onboardingPrivacyBody =>
+      'Everything stays on your device. No cloud dependency, no tracking, no ads.';
+
+  @override
+  String get onboardingGetStartedTitle => 'Get Started';
+
+  @override
+  String get onboardingEnableReminderPrompt => 'Enable daily reminders?';
+
+  @override
+  String get onboardingDailyReminderTitle => 'Daily reminder';
+
+  @override
+  String get onboardingDailyReminderSubtitle =>
+      'A gentle nudge to log your day.';
+
+  @override
+  String get onboardingContinue => 'Continue';
+
+  @override
+  String get onboardingCreateFirstEntry => 'Create your first entry';
 }

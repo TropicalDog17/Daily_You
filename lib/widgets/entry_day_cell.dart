@@ -104,7 +104,26 @@ class EntryDayCell extends StatelessWidget {
                 // Use number with baked in shadow. The Impeller renderer stutters with text shadows
                 RawImage(
                   image: dayNumber,
-                )
+                ),
+                if (image.mediaType == 'video' ||
+                    image.mediaType == 'live_photo')
+                  Positioned(
+                    right: 8,
+                    bottom: 6,
+                    child: Icon(
+                      image.mediaType == 'live_photo'
+                          ? Icons.motion_photos_on_rounded
+                          : Icons.play_circle_fill_rounded,
+                      size: 16,
+                      color: Colors.white,
+                      shadows: [
+                        Shadow(
+                          color: Colors.black.withValues(alpha: 0.5),
+                          blurRadius: 6,
+                        ),
+                      ],
+                    ),
+                  ),
               ],
             ),
           ),

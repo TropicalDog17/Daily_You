@@ -1,1 +1,1 @@
-use serena mcp if possible
+Use ripgrep for grep operations

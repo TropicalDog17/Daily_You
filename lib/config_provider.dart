@@ -42,6 +42,8 @@ class ConfigKey {
   static const String reminderEndMinute = "reminderEndMinute";
   static const String defaultTemplate = "defaultTemplate";
   static const String imageQualityLevel = "imageQualityLevel";
+  static const String maxVideoDurationSeconds = "maxVideoDurationSeconds";
+  static const String importLivePhotosAsVideo = "importLivePhotosAsVideo";
   static const String alwaysRemind = "alwaysRemind";
   static const String dismissedNotificationOnboarding =
       "dismissedNotificationOnboarding";
@@ -109,6 +111,8 @@ class ConfigProvider with ChangeNotifier {
     ConfigKey.reminderEndMinute: 0,
     ConfigKey.defaultTemplate: -1,
     ConfigKey.imageQualityLevel: ImageQuality.medium,
+    ConfigKey.maxVideoDurationSeconds: 3,
+    ConfigKey.importLivePhotosAsVideo: false,
     ConfigKey.alwaysRemind: false,
     ConfigKey.dismissedNotificationOnboarding: false,
     ConfigKey.overrideLanguage: null,

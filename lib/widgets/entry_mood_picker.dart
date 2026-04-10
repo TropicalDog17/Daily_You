@@ -1,5 +1,6 @@
 import 'package:daily_you/widgets/punch_scale.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:daily_you/widgets/mood_icon.dart';
 
 class EntryMoodPicker extends StatefulWidget {
@@ -49,6 +50,9 @@ class _EntryMoodPickerState extends State<EntryMoodPicker> {
       value = null;
     }
     setState((() => _mood = value));
+    if (Theme.of(context).platform == TargetPlatform.iOS) {
+      HapticFeedback.selectionClick();
+    }
     widget.onChangedMood(_mood);
   }
 

@@ -47,4 +47,21 @@ class EntryDao {
       whereArgs: [id],
     );
   }
+
+  static Future<List<Entry>> getEntriesForDayOfYear(int month, int day) async {
+    final monthString = month.toString().padLeft(2, '0');
+    final dayString = day.toString().padLeft(2, '0');
+    final currentYear = DateTime.now().year.toString();
+
+    final result = await AppDatabase.instance.database!.query(
+      entriesTable,
+      where: "strftime('%m', ${EntryFields.timeCreate}) = ? "
+          "AND strftime('%d', ${EntryFields.timeCreate}) = ? "
+          "AND strftime('%Y', ${EntryFields.timeCreate}) != ?",
+      whereArgs: [monthString, dayString, currentYear],
+      orderBy: '${EntryFields.timeCreate} DESC',
+    );
+
+    return result.map((json) => Entry.fromJson(json)).toList();
+  }
 }

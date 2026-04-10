@@ -9,7 +9,13 @@
       "Bash(rm -rf Pods Podfile.lock .symlinks)",
       "Bash(pod install:*)",
       "Bash(flutter run:*)",
-      "Bash(flutter pub:*)"
+      "Bash(flutter pub:*)",
+      "Bash(gh pr:*)",
+      "Bash(find /Users/mac/personal/Daily_You/lib/pages -type f -name *.dart)",
+      "mcp__serena__list_dir",
+      "Bash(flutter analyze:*)",
+      "Bash(gh issue:*)",
+      "Bash(git add:*)"
     ]
   }
 }

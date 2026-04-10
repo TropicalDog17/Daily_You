@@ -1,4 +1,5 @@
 import 'package:daily_you/models/entry.dart';
+import 'package:daily_you/pages/year_in_review_page.dart';
 import 'package:daily_you/providers/entries_provider.dart';
 import 'package:daily_you/widgets/mood_by_day_chart.dart';
 import 'package:daily_you/widgets/mood_by_month_chart.dart';
@@ -54,10 +55,49 @@ class _StatsPageState extends State<StatsPage>
     entriesInRange = entriesProvider.getEntriesInRange(statsRange);
     var (currentStreak, longestStreak, daysSinceBadDay) =
         entriesProvider.getStreaks();
+    final uniqueDays = entriesProvider.entries
+        .map((entry) => DateTime(entry.timeCreate.year, entry.timeCreate.month,
+            entry.timeCreate.day))
+        .toSet()
+        .length;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          child: Card.filled(
+            child: ListTile(
+              leading: const Icon(Icons.auto_awesome_motion_rounded),
+              title: Text(AppLocalizations.of(context)!.yearInReviewTitle),
+              subtitle:
+                  Text(AppLocalizations.of(context)!.yearInReviewCardSubtitle),
+              trailing: const Icon(Icons.chevron_right_rounded),
+              onTap: () async {
+                await Navigator.of(context).push(
+                  MaterialPageRoute(
+                    allowSnapshotting: false,
+                    builder: (context) => const YearInReviewPage(),
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+        if (uniqueDays < 7)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: Card.filled(
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Text(
+                  AppLocalizations.of(context)!.statsUnlockAfterWeek,
+                  style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant),
+                ),
+              ),
+            ),
+          ),
         const MoodByMonthChart(),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 8),

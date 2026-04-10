@@ -3,6 +3,7 @@ import 'package:daily_you/database/app_database.dart';
 import 'package:daily_you/database/image_storage.dart';
 import 'package:daily_you/device_info_service.dart';
 import 'package:daily_you/launch_intent.dart';
+import 'package:daily_you/pages/onboarding_page.dart';
 import 'package:daily_you/widgets/auth_popup.dart';
 import 'package:flutter/material.dart';
 import 'package:daily_you/l10n/generated/app_localizations.dart';
@@ -101,8 +102,18 @@ class _LaunchPageState extends State<LaunchPage> {
   }
 
   Future<void> _nextPage() async {
+    final prefs = await SharedPreferences.getInstance();
+    final completedOnboarding =
+        prefs.getBool(OnboardingPage.completionKey) ?? false;
+
+    if (!mounted) return;
+
     await Navigator.of(context).pushReplacement(MaterialPageRoute(
-        builder: (context) => widget.nextPage, allowSnapshotting: false));
+      allowSnapshotting: false,
+      builder: (context) => completedOnboarding
+          ? widget.nextPage
+          : OnboardingPage(nextPage: widget.nextPage),
+    ));
   }
 
   @override

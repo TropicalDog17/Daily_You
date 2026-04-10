@@ -4,6 +4,7 @@ import 'package:daily_you/pages/settings/appearance_settings.dart';
 import 'package:daily_you/pages/settings/backup_restore_settings.dart';
 import 'package:daily_you/pages/settings/flashback_settings.dart';
 import 'package:daily_you/pages/settings/language_settings.dart';
+import 'package:daily_you/pages/settings/media_settings.dart';
 import 'package:daily_you/pages/settings/notification_settings.dart';
 import 'package:daily_you/pages/settings/security_settings.dart';
 import 'package:daily_you/pages/settings/storage_settings.dart';
@@ -63,7 +64,8 @@ class _SettingsPageState extends State<SettingsPage> {
                   TextSpan(
                     text: AppLocalizations.of(
                       context,
-                    )!.settingsConsiderSupporting,
+                    )!
+                        .settingsConsiderSupporting,
                     style: TextStyle(
                       fontSize: 14,
                       color: Theme.of(context).colorScheme.primary,
@@ -115,6 +117,11 @@ class _SettingsPageState extends State<SettingsPage> {
             title: AppLocalizations.of(context)!.settingsTemplatesTitle,
             icon: Icons.description_rounded,
             page: TemplateSettings(),
+          ),
+          SettingsCategory(
+            title: AppLocalizations.of(context)!.settingsMediaTitle,
+            icon: Icons.perm_media_rounded,
+            page: const MediaSettings(),
           ),
           SettingsCategory(
             title: AppLocalizations.of(context)!.settingsStorageTitle,

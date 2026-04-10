@@ -6,8 +6,8 @@ import 'package:daily_you/l10n/generated/app_localizations.dart';
 import 'package:intl/intl.dart';
 import 'package:daily_you/models/entry.dart';
 import 'package:daily_you/widgets/mood_icon.dart';
-import 'package:markdown_widget/markdown_widget.dart';
 import 'local_image_loader.dart';
+import 'video_duration_badge.dart';
 
 class LargeEntryCardWidget extends StatelessWidget {
   const LargeEntryCardWidget(
@@ -62,6 +62,33 @@ class LargeEntryCardWidget extends StatelessWidget {
                                 offset: Offset(0, 0)),
                           ],
                         ),
+                      ),
+                    ),
+                  if (images.first.mediaType != 'image')
+                    Positioned(
+                      left: 8,
+                      top: 8,
+                      child: Icon(
+                        images.first.mediaType == 'live_photo'
+                            ? Icons.motion_photos_on_rounded
+                            : Icons.play_circle_fill_rounded,
+                        color: Colors.white,
+                        shadows: [
+                          Shadow(
+                            color: Colors.black.withValues(alpha: 0.6),
+                            blurRadius: 6,
+                            offset: Offset(0, 0),
+                          ),
+                        ],
+                      ),
+                    ),
+                  if (images.first.mediaType != 'image' &&
+                      images.first.videoPath != null)
+                    Positioned(
+                      right: 8,
+                      bottom: 8,
+                      child: VideoDurationBadge(
+                        videoPath: images.first.videoPath!,
                       ),
                     ),
                 ])),

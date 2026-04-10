@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:math';
 import 'package:daily_you/database/app_database.dart';
 import 'package:daily_you/database/entry_dao.dart';
 import 'package:daily_you/models/entry.dart';
@@ -338,5 +339,33 @@ class EntriesProvider with ChangeNotifier {
     } else {
       return null;
     }
+  }
+
+  Future<List<Entry>> getEntriesForDayOfYear(int month, int day) {
+    return EntryDao.getEntriesForDayOfYear(month, day);
+  }
+
+  List<Entry> getLocalEntriesForDayOfYear(int month, int day) {
+    final currentYear = DateTime.now().year;
+    return entries
+        .where(
+          (entry) =>
+              entry.timeCreate.month == month &&
+              entry.timeCreate.day == day &&
+              entry.timeCreate.year != currentYear,
+        )
+        .toList();
+  }
+
+  Entry pickRandomEntry(List<Entry> candidates, {int? excludeId}) {
+    if (candidates.isEmpty) {
+      throw ArgumentError('candidates cannot be empty');
+    }
+
+    final available = excludeId == null
+        ? candidates
+        : candidates.where((entry) => entry.id != excludeId).toList();
+    final randomPool = available.isNotEmpty ? available : candidates;
+    return randomPool[Random().nextInt(randomPool.length)];
   }
 }

@@ -15,9 +15,9 @@ import 'package:daily_you/pages/edit_entry_page.dart';
 import 'package:daily_you/pages/image_view_page.dart';
 import 'package:daily_you/widgets/local_image_loader.dart';
 import 'package:daily_you/widgets/mood_icon.dart';
-import 'package:markdown_widget/markdown_widget.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:daily_you/widgets/video_player_widget.dart';
 
 class EntryDetailPage extends StatefulWidget {
   final int index;
@@ -107,8 +107,8 @@ class _EntryDetailPageState extends State<EntryDetailPage> {
                     AddEditEntryPage(entry: entry, images: images),
                 transitionsBuilder:
                     (context, animation, secondaryAnimation, child) {
-                      return FadeTransition(opacity: animation, child: child);
-                    },
+                  return FadeTransition(opacity: animation, child: child);
+                },
                 transitionDuration: const Duration(milliseconds: 200),
               ),
             );
@@ -157,14 +157,23 @@ class _EntryDetailPageState extends State<EntryDetailPage> {
                   "$sharedText${DateFormat.yMMMEd(TimeManager.currentLocale(context)).format(entry.timeCreate)}\n${entry.text}";
 
               if (images.isNotEmpty) {
-                // Share Image
-                var bytes = await ImageStorage.instance.getBytes(
-                  images.first.imgPath,
-                );
+                final leadMedia = images.first;
+                final sharePath = leadMedia.mediaType == 'video'
+                    ? leadMedia.videoPath
+                    : leadMedia.imgPath;
+                if (sharePath == null) return;
+                var bytes = await ImageStorage.instance.getBytes(sharePath);
                 if (bytes != null) {
                   await Share.shareXFiles(
-                    [XFile.fromData(bytes, mimeType: "images/*")],
-                    fileNameOverrides: [images.first.imgPath],
+                    [
+                      XFile.fromData(
+                        bytes,
+                        mimeType: leadMedia.mediaType == 'video'
+                            ? 'video/*'
+                            : 'images/*',
+                      )
+                    ],
+                    fileNameOverrides: [sharePath],
                     text: sharedText,
                   );
                 }
@@ -205,27 +214,62 @@ class EntryDetails extends StatelessWidget {
             if (images.isNotEmpty && images.length > 1)
               _imagesList(context, images),
             if (images.isNotEmpty && images.length == 1)
-              GestureDetector(
-                child: Center(
-                  child: SizedBox(
-                    height: 220,
-                    width: 220,
-                    child: Card.filled(
-                      clipBehavior: Clip.antiAlias,
-                      child: LocalImageLoader(imagePath: images.first.imgPath),
-                    ),
-                  ),
+              Center(
+                child: SizedBox(
+                  height: 220,
+                  width: 220,
+                  child: images.first.mediaType == 'video'
+                      ? VideoPlayerWidget(media: images.first)
+                      : GestureDetector(
+                          child: Card.filled(
+                            clipBehavior: Clip.antiAlias,
+                            child: Stack(
+                              fit: StackFit.expand,
+                              children: [
+                                LocalImageLoader(
+                                    imagePath: images.first.imgPath),
+                                if (images.first.mediaType == 'live_photo')
+                                  const Align(
+                                    alignment: Alignment.bottomRight,
+                                    child: Padding(
+                                      padding: EdgeInsets.all(8.0),
+                                      child: Icon(
+                                        Icons.motion_photos_on_rounded,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                          onTap: () async {
+                            await Navigator.of(context).push(
+                              MaterialPageRoute(
+                                allowSnapshotting: false,
+                                fullscreenDialog: true,
+                                builder: (context) =>
+                                    ImageViewPage(images: images, index: 0),
+                              ),
+                            );
+                          },
+                          onLongPress: images.first.mediaType == 'live_photo'
+                              ? () async {
+                                  await showDialog(
+                                    context: context,
+                                    builder: (_) => Dialog(
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(8),
+                                        child: VideoPlayerWidget(
+                                          media: images.first,
+                                          autoStart: true,
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                }
+                              : null,
+                        ),
                 ),
-                onTap: () async {
-                  await Navigator.of(context).push(
-                    MaterialPageRoute(
-                      allowSnapshotting: false,
-                      fullscreenDialog: true,
-                      builder: (context) =>
-                          ImageViewPage(images: images, index: 0),
-                    ),
-                  );
-                },
               ),
             Card.filled(
               color: Theme.of(context).colorScheme.surfaceContainer,
@@ -306,24 +350,79 @@ class EntryDetails extends StatelessWidget {
                             width: imageSize,
                             child: Card.filled(
                               clipBehavior: Clip.antiAlias,
-                              child: LocalImageLoader(imagePath: image.imgPath),
+                              child: Stack(
+                                fit: StackFit.expand,
+                                children: [
+                                  LocalImageLoader(imagePath: image.imgPath),
+                                  if (image.mediaType == 'video')
+                                    const Center(
+                                      child: Icon(
+                                        Icons.play_circle_fill_rounded,
+                                        color: Colors.white,
+                                        size: 36,
+                                      ),
+                                    ),
+                                  if (image.mediaType == 'live_photo')
+                                    const Align(
+                                      alignment: Alignment.bottomRight,
+                                      child: Padding(
+                                        padding: EdgeInsets.all(8.0),
+                                        child: Icon(
+                                          Icons.motion_photos_on_rounded,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              ),
                             ),
                           ),
                         ),
                         onTap: () async {
-                          await Navigator.of(context).push(
-                            MaterialPageRoute(
-                              allowSnapshotting: false,
-                              fullscreenDialog: true,
-                              builder: (context) => ImageViewPage(
-                                images: images,
-                                index: images.indexWhere(
-                                  (x) => x.id == image.id,
+                          if (image.mediaType == 'video') {
+                            await showDialog(
+                              context: context,
+                              builder: (_) => Dialog(
+                                child: Padding(
+                                  padding: const EdgeInsets.all(8),
+                                  child: VideoPlayerWidget(media: image),
                                 ),
                               ),
-                            ),
-                          );
+                            );
+                          } else {
+                            final imageOnly = images
+                                .where((x) => x.mediaType != 'video')
+                                .toList();
+                            await Navigator.of(context).push(
+                              MaterialPageRoute(
+                                allowSnapshotting: false,
+                                fullscreenDialog: true,
+                                builder: (context) => ImageViewPage(
+                                  images: imageOnly,
+                                  index: imageOnly.indexWhere(
+                                    (x) => x.id == image.id,
+                                  ),
+                                ),
+                              ),
+                            );
+                          }
                         },
+                        onLongPress: image.mediaType == 'live_photo'
+                            ? () async {
+                                await showDialog(
+                                  context: context,
+                                  builder: (_) => Dialog(
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(8),
+                                      child: VideoPlayerWidget(
+                                        media: image,
+                                        autoStart: true,
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              }
+                            : null,
                       ),
                     ),
                   )
@@ -346,20 +445,78 @@ class EntryDetails extends StatelessWidget {
                     width: imageSize,
                     child: Card.filled(
                       clipBehavior: Clip.antiAlias,
-                      child: LocalImageLoader(imagePath: images[index].imgPath),
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          LocalImageLoader(imagePath: images[index].imgPath),
+                          if (images[index].mediaType == 'video')
+                            const Center(
+                              child: Icon(
+                                Icons.play_circle_fill_rounded,
+                                color: Colors.white,
+                                size: 36,
+                              ),
+                            ),
+                          if (images[index].mediaType == 'live_photo')
+                            const Align(
+                              alignment: Alignment.bottomRight,
+                              child: Padding(
+                                padding: EdgeInsets.all(8.0),
+                                child: Icon(
+                                  Icons.motion_photos_on_rounded,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
                 onTap: () async {
-                  await Navigator.of(context).push(
-                    MaterialPageRoute(
-                      allowSnapshotting: false,
-                      fullscreenDialog: true,
-                      builder: (context) =>
-                          ImageViewPage(images: images, index: index),
-                    ),
-                  );
+                  if (images[index].mediaType == 'video') {
+                    await showDialog(
+                      context: context,
+                      builder: (_) => Dialog(
+                        child: Padding(
+                          padding: const EdgeInsets.all(8),
+                          child: VideoPlayerWidget(media: images[index]),
+                        ),
+                      ),
+                    );
+                  } else {
+                    final imageOnly =
+                        images.where((x) => x.mediaType != 'video').toList();
+                    await Navigator.of(context).push(
+                      MaterialPageRoute(
+                        allowSnapshotting: false,
+                        fullscreenDialog: true,
+                        builder: (context) => ImageViewPage(
+                          images: imageOnly,
+                          index: imageOnly.indexWhere(
+                            (x) => x.id == images[index].id,
+                          ),
+                        ),
+                      ),
+                    );
+                  }
                 },
+                onLongPress: images[index].mediaType == 'live_photo'
+                    ? () async {
+                        await showDialog(
+                          context: context,
+                          builder: (_) => Dialog(
+                            child: Padding(
+                              padding: const EdgeInsets.all(8),
+                              child: VideoPlayerWidget(
+                                media: images[index],
+                                autoStart: true,
+                              ),
+                            ),
+                          ),
+                        );
+                      }
+                    : null,
               );
             },
           ),

@@ -64,8 +64,8 @@ class _AddEditEntryPageState extends State<AddEditEntryPage>
     if (widget.entry == null) {
       var createTime =
           (TimeManager.isToday(widget.overrideCreateDate ?? DateTime.now()))
-          ? DateTime.now()
-          : (widget.overrideCreateDate ?? DateTime.now());
+              ? DateTime.now()
+              : (widget.overrideCreateDate ?? DateTime.now());
       _entry = await EntriesProvider.instance.createNewEntry(createTime);
       _newEntry = true;
     } else {
@@ -253,14 +253,25 @@ class _AddEditEntryPageState extends State<AddEditEntryPage>
         );
 
   Widget _deleteButton() => IconButton(
-    icon: const Icon(Icons.delete),
-    onPressed: () => _showDeleteEntryPopup(),
-  );
+        icon: const Icon(Icons.delete),
+        onPressed: () => _showDeleteEntryPopup(),
+      );
 
   Widget _saveButton() => IconButton(
-    icon: const Icon(Icons.check_rounded),
-    onPressed: () => Navigator.of(context).pop(),
-  );
+        icon: AnimatedScale(
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeOut,
+          scale: _savingEntry ? 0.88 : 1,
+          child: _savingEntry
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Icon(Icons.check_rounded),
+        ),
+        onPressed: () => Navigator.of(context).pop(),
+      );
 
   Widget _changeDateButton() {
     final theme = Theme.of(context);
@@ -309,7 +320,13 @@ class _AddEditEntryPageState extends State<AddEditEntryPage>
     // Saving is guarded since quickly entering and exiting the app could trigger
     // multiple async saves.
     if (_savingEntry == false) {
-      _savingEntry = true;
+      if (mounted) {
+        setState(() {
+          _savingEntry = true;
+        });
+      } else {
+        _savingEntry = true;
+      }
 
       final updatedEntry = _entry.copy(
         text: text,
@@ -333,7 +350,13 @@ class _AddEditEntryPageState extends State<AddEditEntryPage>
       }
       // Images will update if they changed
       await _saveOrUpdateImage(id);
-      _savingEntry = false;
+      if (mounted) {
+        setState(() {
+          _savingEntry = false;
+        });
+      } else {
+        _savingEntry = false;
+      }
     }
   }
 
@@ -342,6 +365,9 @@ class _AddEditEntryPageState extends State<AddEditEntryPage>
     var entryImages = EntryImagesProvider.instance.getForEntry(entry);
     for (EntryImage image in entryImages) {
       await ImageStorage.instance.delete(image.imgPath);
+      if (image.videoPath != null) {
+        await ImageStorage.instance.delete(image.videoPath!);
+      }
       await EntryImagesProvider.instance.remove(image);
     }
     // Delete entry
@@ -366,6 +392,9 @@ class _AddEditEntryPageState extends State<AddEditEntryPage>
       if (matchingImage == null) {
         // Delete image
         await ImageStorage.instance.delete(existingImage.imgPath);
+        if (existingImage.videoPath != null) {
+          await ImageStorage.instance.delete(existingImage.videoPath!);
+        }
         await EntryImagesProvider.instance.remove(existingImage);
       } else if (matchingImage.imgRank != existingImage.imgRank) {
         await EntryImagesProvider.instance.update(matchingImage);
@@ -384,20 +413,13 @@ class _AddEditEntryPageState extends State<AddEditEntryPage>
     }
   }
 
-  Future<void> _addImage(List<String> imgPaths) async {
-    for (var imgPath in imgPaths) {
+  Future<void> _addImage(List<EntryImage> newMedia) async {
+    for (var media in newMedia) {
       // Add image to the end by giving it the lowest rank
       for (var image in _currentImages) {
         image.imgRank += 1;
       }
-      _currentImages.add(
-        EntryImage(
-          entryId: id,
-          imgPath: imgPath,
-          imgRank: 0,
-          timeCreate: DateTime.now(),
-        ),
-      );
+      _currentImages.add(media.copy(entryId: id, imgRank: 0));
     }
     await _saveEntry();
   }

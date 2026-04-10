@@ -254,8 +254,36 @@ class _GalleryPageState extends State<GalleryPage>
     final configProvider = Provider.of<ConfigProvider>(context);
     return entries.isEmpty
         ? Center(
-            child: Text(
-              AppLocalizations.of(context)!.noLogs,
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Card.filled(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.photo_library_outlined,
+                        size: 38,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        AppLocalizations.of(context)!.noLogs,
+                        style: const TextStyle(fontSize: 17),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'Add photos or videos to see your gallery grow.',
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ),
           )
         : GridView.builder(
