@@ -178,7 +178,7 @@ class _GalleryPageState extends State<GalleryPage>
                             visualDensity: VisualDensity(
                                 horizontal: VisualDensity.minimumDensity),
                             key: ValueKey('clearButton'),
-                            icon: Icon(Icons.clear),
+                            icon: Icon(Icons.close_rounded),
                             onPressed: () {
                               _searchController.clear();
                               entriesProvider.searchText = "";
@@ -252,77 +252,116 @@ class _GalleryPageState extends State<GalleryPage>
       BuildContext context, bool listView, List<Entry> entries) {
     final entryImagesProvider = Provider.of<EntryImagesProvider>(context);
     final configProvider = Provider.of<ConfigProvider>(context);
-    return entries.isEmpty
-        ? Center(
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Card.filled(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.photo_library_outlined,
-                        size: 38,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                      const SizedBox(height: 10),
-                      Text(
-                        AppLocalizations.of(context)!.noLogs,
-                        style: const TextStyle(fontSize: 17),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        'Add photos or videos to see your gallery grow.',
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 220),
+      switchInCurve: Curves.easeOutCubic,
+      switchOutCurve: Curves.easeInCubic,
+      transitionBuilder: (child, animation) {
+        return FadeTransition(opacity: animation, child: child);
+      },
+      child: entries.isEmpty
+          ? Center(
+              key: const ValueKey('gallery-empty'),
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Card.filled(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.photo_library_outlined,
+                          size: 38,
+                          color: Theme.of(context).colorScheme.primary,
                         ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
+                        const SizedBox(height: 10),
+                        Text(
+                          AppLocalizations.of(context)!.noLogs,
+                          style: const TextStyle(fontSize: 17),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          'Add photos or videos to see your gallery grow.',
+                          style: TextStyle(
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
+            )
+          : GridView.builder(
+              key: ValueKey('gallery-grid-$listView'),
+              controller: _scrollController,
+              padding: const EdgeInsets.only(top: 70, bottom: 70),
+              physics: const ScrollPhysics(),
+              shrinkWrap: true,
+              gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+                  maxCrossAxisExtent: listView ? 500 : 300,
+                  crossAxisSpacing: 1.0, // Spacing between columns
+                  mainAxisSpacing: 1.0, // Spacing between rows
+                  childAspectRatio: listView ? 2.0 : 1.0),
+              itemCount: entries.length,
+              itemBuilder: (context, index) {
+                final entry = entries[index];
+                return _buildEntryReveal(
+                  entryId: entry.id,
+                  index: index,
+                  child: GestureDetector(
+                    onTap: () async {
+                      await Navigator.of(context).push(MaterialPageRoute(
+                          allowSnapshotting: false,
+                          builder: (context) => EntryDetailPage(
+                                filtered: true,
+                                index: index,
+                              )));
+                    },
+                    child: listView
+                        ? LargeEntryCardWidget(
+                            entry: entry,
+                            images: entryImagesProvider.getForEntry(entry),
+                            hideImage: configProvider
+                                .get(ConfigKey.hideImagesInGallery),
+                          )
+                        : EntryCardWidget(
+                            entry: entry,
+                            images: entryImagesProvider.getForEntry(entry),
+                            hideImage: configProvider
+                                .get(ConfigKey.hideImagesInGallery),
+                          ),
+                  ),
+                );
+              },
             ),
-          )
-        : GridView.builder(
-            controller: _scrollController,
-            padding: const EdgeInsets.only(top: 70, bottom: 70),
-            physics: const ScrollPhysics(),
-            shrinkWrap: true,
-            gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-                maxCrossAxisExtent: listView ? 500 : 300,
-                crossAxisSpacing: 1.0, // Spacing between columns
-                mainAxisSpacing: 1.0, // Spacing between rows
-                childAspectRatio: listView ? 2.0 : 1.0),
-            itemCount: entries.length,
-            itemBuilder: (context, index) {
-              final entry = entries[index];
-              return GestureDetector(
-                onTap: () async {
-                  await Navigator.of(context).push(MaterialPageRoute(
-                      allowSnapshotting: false,
-                      builder: (context) => EntryDetailPage(
-                            filtered: true,
-                            index: index,
-                          )));
-                },
-                child: listView
-                    ? LargeEntryCardWidget(
-                        entry: entry,
-                        images: entryImagesProvider.getForEntry(entry),
-                        hideImage:
-                            configProvider.get(ConfigKey.hideImagesInGallery),
-                      )
-                    : EntryCardWidget(
-                        entry: entry,
-                        images: entryImagesProvider.getForEntry(entry),
-                        hideImage:
-                            configProvider.get(ConfigKey.hideImagesInGallery),
-                      ),
-              );
-            },
-          );
+    );
+  }
+
+  Widget _buildEntryReveal({
+    required int? entryId,
+    required int index,
+    required Widget child,
+  }) {
+    final clampedIndex = index > 8 ? 8 : index;
+    return TweenAnimationBuilder<double>(
+      key: ValueKey('gallery-entry-${entryId ?? index}'),
+      tween: Tween(begin: 0, end: 1),
+      duration: Duration(milliseconds: 140 + (clampedIndex * 24)),
+      curve: Curves.easeOutCubic,
+      builder: (context, value, child) {
+        return Opacity(
+          opacity: value,
+          child: Transform.translate(
+            offset: Offset(0, (1 - value) * 8),
+            child: child,
+          ),
+        );
+      },
+      child: child,
+    );
   }
 }

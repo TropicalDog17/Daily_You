@@ -196,6 +196,66 @@ DateTime calculateReminderDateTime({bool firstSet = false}) {
   return DateTime.now().add(reminderTime - currentTime);
 }
 
+ThemeData _buildThemeData({required ColorScheme colorScheme}) {
+  final baseTheme = ThemeData(
+    useMaterial3: true,
+    colorScheme: colorScheme,
+    pageTransitionsTheme: const PageTransitionsTheme(
+      builders: {
+        TargetPlatform.android: FadeUpwardsPageTransitionsBuilder(),
+        TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+        TargetPlatform.macOS: CupertinoPageTransitionsBuilder(),
+        TargetPlatform.linux: FadeUpwardsPageTransitionsBuilder(),
+        TargetPlatform.windows: FadeUpwardsPageTransitionsBuilder(),
+        TargetPlatform.fuchsia: FadeUpwardsPageTransitionsBuilder(),
+      },
+    ),
+  );
+
+  final textTheme = baseTheme.textTheme.apply(
+    bodyColor: colorScheme.onSurface,
+    displayColor: colorScheme.onSurface,
+  );
+
+  return baseTheme.copyWith(
+    scaffoldBackgroundColor: colorScheme.surface,
+    textTheme: textTheme,
+    appBarTheme: AppBarTheme(
+      backgroundColor: colorScheme.surface,
+      foregroundColor: colorScheme.onSurface,
+      surfaceTintColor: Colors.transparent,
+      elevation: 0,
+      scrolledUnderElevation: 1,
+      iconTheme: IconThemeData(color: colorScheme.onSurfaceVariant),
+      actionsIconTheme: IconThemeData(color: colorScheme.onSurfaceVariant),
+      titleTextStyle: textTheme.titleLarge?.copyWith(
+        color: colorScheme.onSurface,
+        fontWeight: FontWeight.w600,
+      ),
+    ),
+    navigationBarTheme: NavigationBarThemeData(
+      backgroundColor: colorScheme.surface,
+      indicatorColor: colorScheme.secondaryContainer.withValues(alpha: 0.65),
+      labelTextStyle: WidgetStateProperty.resolveWith((states) {
+        final selected = states.contains(WidgetState.selected);
+        return textTheme.labelMedium?.copyWith(
+          color:
+              selected ? colorScheme.onSurface : colorScheme.onSurfaceVariant,
+          fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+        );
+      }),
+      iconTheme: WidgetStateProperty.resolveWith((states) {
+        final selected = states.contains(WidgetState.selected);
+        return IconThemeData(
+          color: selected
+              ? colorScheme.onSecondaryContainer
+              : colorScheme.onSurfaceVariant,
+        );
+      }),
+    ),
+  );
+}
+
 class MainApp extends StatefulWidget {
   const MainApp({super.key});
 
@@ -213,6 +273,34 @@ class _MainAppState extends State<MainApp> {
   Widget build(BuildContext context) {
     final themeModeProvider = Provider.of<ThemeModeProvider>(context);
     final configProvider = Provider.of<ConfigProvider>(context);
+    final lightColorScheme = ColorScheme.fromSeed(
+      seedColor: themeModeProvider.accentColor,
+      brightness: Brightness.light,
+    );
+    final darkColorScheme = ColorScheme.fromSeed(
+      seedColor: themeModeProvider.accentColor,
+      brightness: Brightness.dark,
+    );
+    final amoledColorScheme = ColorScheme.fromSeed(
+      seedColor: themeModeProvider.accentColor,
+      brightness: Brightness.dark,
+      surfaceContainerLowest: Colors.black,
+      surfaceContainerLow: Colors.black,
+      surfaceContainerHighest: Colors.black,
+      surfaceContainerHigh: Colors.black,
+      surfaceBright: Colors.black,
+      surfaceDim: Colors.black,
+      surface: Colors.black,
+      surfaceContainer: Colors.black,
+      onSurface: Colors.white,
+      surfaceTint: Colors.black,
+      primaryContainer: Colors.black,
+      secondaryContainer: Colors.black,
+      tertiaryContainer: Colors.black,
+      inverseSurface: Colors.black,
+      inversePrimary: Colors.black,
+      scrim: Colors.black,
+    );
 
     return StatsFl(
       isEnabled: false,
@@ -241,45 +329,10 @@ class _MainAppState extends State<MainApp> {
           localeResolutionCallback: (locale, supportedLocales) {
             return configProvider.getOverrideLanguage();
           },
-          theme: ThemeData(
-            useMaterial3: true,
-            colorScheme: ColorScheme.fromSeed(
-              seedColor: themeModeProvider.accentColor,
-              brightness: Brightness.light,
-            ),
-          ),
+          theme: _buildThemeData(colorScheme: lightColorScheme),
           darkTheme: (ConfigProvider.instance.get(ConfigKey.theme) == 'amoled')
-              ? ThemeData(
-                  useMaterial3: true,
-                  colorScheme: ColorScheme.fromSeed(
-                    seedColor: themeModeProvider.accentColor,
-                    brightness: Brightness.dark,
-                    surfaceContainerLowest: Colors.black,
-                    surfaceContainerLow: Colors.black,
-                    surfaceContainerHighest: Colors.black,
-                    surfaceContainerHigh: Colors.black,
-                    surfaceBright: Colors.black,
-                    surfaceDim: Colors.black,
-                    surface: Colors.black,
-                    surfaceContainer: Colors.black,
-                    onSurface: Colors.white,
-                    surfaceTint: Colors.black,
-                    primaryContainer: Colors.black,
-                    secondaryContainer: Colors.black,
-                    tertiaryContainer: Colors.black,
-                    inverseSurface: Colors.black,
-                    inversePrimary: Colors.black,
-                    scrim: Colors.black,
-                  ),
-                  scaffoldBackgroundColor: Colors.black,
-                )
-              : ThemeData(
-                  useMaterial3: true,
-                  colorScheme: ColorScheme.fromSeed(
-                    seedColor: themeModeProvider.accentColor,
-                    brightness: Brightness.dark,
-                  ),
-                ),
+              ? _buildThemeData(colorScheme: amoledColorScheme)
+              : _buildThemeData(colorScheme: darkColorScheme),
           home: LaunchPage(
             nextPage: ResponsiveLayout(
               mobileScaffold: MobileScaffold(),

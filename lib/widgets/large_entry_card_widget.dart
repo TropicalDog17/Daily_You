@@ -25,6 +25,7 @@ class LargeEntryCardWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final time = DateFormat.yMMMd(TimeManager.currentLocale(context))
         .format(entry.timeCreate);
     return Card.filled(
@@ -54,10 +55,11 @@ class LargeEntryCardWidget extends StatelessWidget {
                         padding: const EdgeInsets.all(8.0),
                         child: Icon(
                           Icons.photo_library_rounded,
-                          color: Colors.white,
+                          color: colorScheme.onPrimary,
                           shadows: [
                             Shadow(
-                                color: Colors.black.withValues(alpha: 0.6),
+                                color:
+                                    colorScheme.scrim.withValues(alpha: 0.45),
                                 blurRadius: 6,
                                 offset: Offset(0, 0)),
                           ],
@@ -72,10 +74,10 @@ class LargeEntryCardWidget extends StatelessWidget {
                         images.first.mediaType == 'live_photo'
                             ? Icons.motion_photos_on_rounded
                             : Icons.play_circle_fill_rounded,
-                        color: Colors.white,
+                        color: colorScheme.onPrimary,
                         shadows: [
                           Shadow(
-                            color: Colors.black.withValues(alpha: 0.6),
+                            color: colorScheme.scrim.withValues(alpha: 0.45),
                             blurRadius: 6,
                             offset: Offset(0, 0),
                           ),

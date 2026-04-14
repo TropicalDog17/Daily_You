@@ -37,7 +37,6 @@ class _IosCalendarGridState extends State<IosCalendarGrid>
   Widget build(BuildContext context) {
     super.build(context);
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
 
     return CustomScrollView(
       controller: widget.scrollController,
@@ -48,7 +47,7 @@ class _IosCalendarGridState extends State<IosCalendarGrid>
         const SliverPadding(padding: EdgeInsets.only(bottom: 80)),
         // Toolbar pinned at top-of-viewport via reverse
         SliverToBoxAdapter(
-          child: _buildToolbar(context, theme, isDark),
+          child: _buildToolbar(context, theme),
         ),
         if (widget.rewindCard != null)
           SliverToBoxAdapter(
@@ -64,7 +63,7 @@ class _IosCalendarGridState extends State<IosCalendarGrid>
           ),
         // Build month sections: index 0 = current month (bottom)
         ...List.generate(_totalMonths, (monthIndex) {
-          return _buildMonthSliver(context, monthIndex, theme, isDark);
+          return _buildMonthSliver(context, monthIndex, theme);
         }),
         // Top padding (appears at top of scroll)
         const SliverPadding(padding: EdgeInsets.only(bottom: 40)),
@@ -72,7 +71,7 @@ class _IosCalendarGridState extends State<IosCalendarGrid>
     );
   }
 
-  Widget _buildToolbar(BuildContext context, ThemeData theme, bool isDark) {
+  Widget _buildToolbar(BuildContext context, ThemeData theme) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 4, 8, 8),
       child: Row(
@@ -83,7 +82,7 @@ class _IosCalendarGridState extends State<IosCalendarGrid>
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w500,
-              color: isDark ? Colors.white54 : Colors.black54,
+              color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
           const Spacer(),
@@ -93,11 +92,17 @@ class _IosCalendarGridState extends State<IosCalendarGrid>
     );
   }
 
+  Widget _buildDayTile(DateTime? date) {
+    return AspectRatio(
+      aspectRatio: 0.78,
+      child: date == null ? const SizedBox.shrink() : IosDayCell(date: date),
+    );
+  }
+
   Widget _buildMonthSliver(
     BuildContext context,
     int monthIndex,
     ThemeData theme,
-    bool isDark,
   ) {
     final now = DateTime.now();
     // monthIndex 0 = current month, 1 = last month, etc.
@@ -110,32 +115,54 @@ class _IosCalendarGridState extends State<IosCalendarGrid>
             ? now.day
             : daysInMonth;
 
-    // Days in chronological order (1, 2, 3, ...)
-    final days = List.generate(
-      lastDay,
-      (i) => DateTime(monthDate.year, monthDate.month, i + 1),
-    );
+    final rows = <List<DateTime?>>[];
+    final firstRowLength = lastDay % 3 == 0 ? 3 : lastDay % 3;
+
+    for (int startDay = 1;
+        startDay <= lastDay;
+        startDay += rows.isEmpty ? firstRowLength : 3) {
+      final row = <DateTime?>[];
+      final rowLength = rows.isEmpty ? firstRowLength : 3;
+      final endDay = startDay + rowLength - 1;
+      for (int day = startDay; day <= endDay; day++) {
+        row.add(DateTime(monthDate.year, monthDate.month, day));
+      }
+      while (row.length < 3) {
+        row.add(null);
+      }
+      rows.add(row);
+    }
 
     return SliverMainAxisGroup(
       slivers: [
-        // Day grid (appears first because list is reversed)
-        SliverPadding(
-          padding: const EdgeInsets.symmetric(horizontal: 10),
-          sliver: SliverGrid(
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 3,
-              childAspectRatio: 0.78,
-              crossAxisSpacing: 5,
-              mainAxisSpacing: 5,
-            ),
-            delegate: SliverChildBuilderDelegate(
-              (context, index) =>
-                  IosDayCell(date: days[days.length - 1 - index]),
-              childCount: days.length,
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                for (int rowIndex = 0; rowIndex < rows.length; rowIndex++) ...[
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      for (int columnIndex = 0;
+                          columnIndex < rows[rowIndex].length;
+                          columnIndex++) ...[
+                        Expanded(
+                          child: _buildDayTile(rows[rowIndex][columnIndex]),
+                        ),
+                        if (columnIndex < rows[rowIndex].length - 1)
+                          const SizedBox(width: 5),
+                      ],
+                    ],
+                  ),
+                  if (rowIndex < rows.length - 1) const SizedBox(height: 5),
+                ],
+              ],
             ),
           ),
         ),
-        // Month header (appears above grid because list is reversed)
+        // Month header placement is handled by the reversed parent scroll view.
         SliverToBoxAdapter(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
@@ -147,7 +174,8 @@ class _IosCalendarGridState extends State<IosCalendarGrid>
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
                 letterSpacing: 1.0,
-                color: isDark ? Colors.white38 : Colors.black38,
+                color:
+                    theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.75),
               ),
             ),
           ),

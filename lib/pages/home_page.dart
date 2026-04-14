@@ -188,10 +188,11 @@ class _HomePageState extends State<HomePage>
     List<EntryImage> todayImages,
   ) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
     final bgColor = isDark
-        ? theme.colorScheme.primary.withValues(alpha: 0.85)
-        : theme.colorScheme.primary;
+        ? colorScheme.primary.withValues(alpha: 0.85)
+        : colorScheme.primary;
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.end,
@@ -227,7 +228,7 @@ class _HomePageState extends State<HomePage>
               borderRadius: BorderRadius.circular(22),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.12),
+                  color: colorScheme.shadow.withValues(alpha: 0.12),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
@@ -235,7 +236,7 @@ class _HomePageState extends State<HomePage>
             ),
             child: Icon(
               CupertinoIcons.camera_fill,
-              color: Colors.white,
+              color: colorScheme.onPrimary,
               size: 20,
             ),
           ),
@@ -254,7 +255,7 @@ class _HomePageState extends State<HomePage>
               borderRadius: BorderRadius.circular(28),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.15),
+                  color: colorScheme.shadow.withValues(alpha: 0.15),
                   blurRadius: 12,
                   offset: const Offset(0, 3),
                 ),
@@ -262,7 +263,7 @@ class _HomePageState extends State<HomePage>
             ),
             child: Icon(
               todayEntry == null ? CupertinoIcons.plus : CupertinoIcons.pencil,
-              color: Colors.white,
+              color: colorScheme.onPrimary,
               size: 26,
             ),
           ),
@@ -285,12 +286,12 @@ class _HomePageState extends State<HomePage>
           backgroundColor: Theme.of(context).colorScheme.secondaryContainer,
           elevation: 1,
           shape: CircleBorder(),
+          onPressed: _openCompilation,
           child: Icon(
             Icons.movie_creation_rounded,
             color: Theme.of(context).colorScheme.onSecondaryContainer,
             size: 22,
           ),
-          onPressed: _openCompilation,
         ),
         if (Platform.isAndroid || Platform.isIOS)
           FloatingActionButton.small(
@@ -298,27 +299,27 @@ class _HomePageState extends State<HomePage>
             backgroundColor: Theme.of(context).colorScheme.primary,
             elevation: 1,
             shape: CircleBorder(),
-            child: Icon(
-              Icons.camera_alt_rounded,
-              color: Theme.of(context).colorScheme.primaryContainer,
-              size: 24,
-            ),
             onPressed: () async {
               await addOrEditTodayEntry(todayEntry, todayImages, true);
             },
+            child: Icon(
+              Icons.camera_alt_rounded,
+              color: Theme.of(context).colorScheme.onPrimary,
+              size: 24,
+            ),
           ),
         FloatingActionButton(
           heroTag: "home-entry-button",
           backgroundColor: Theme.of(context).colorScheme.primary,
           elevation: 1,
-          child: Icon(
-            todayEntry == null ? Icons.add_rounded : Icons.edit_rounded,
-            color: Theme.of(context).colorScheme.primaryContainer,
-            size: 28,
-          ),
           onPressed: () async {
             await addOrEditTodayEntry(todayEntry, todayImages, false);
           },
+          child: Icon(
+            todayEntry == null ? Icons.add_rounded : Icons.edit_rounded,
+            color: Theme.of(context).colorScheme.onPrimary,
+            size: 28,
+          ),
         ),
       ],
     );
@@ -395,39 +396,69 @@ class _HomePageState extends State<HomePage>
                   itemCount: flashbacks.length,
                   itemBuilder: (context, index) {
                     final flashback = flashbacks[index];
-                    return GestureDetector(
-                      onTap: () async {
-                        await Navigator.of(context).push(
-                          MaterialPageRoute(
-                            allowSnapshotting: false,
-                            builder: (context) => EntryDetailPage(
-                              filtered: false,
-                              index: EntriesProvider.instance.getIndexOfEntry(
-                                flashback.entry.id!,
+                    return _buildFlashbackReveal(
+                      index: index,
+                      entryId: flashback.entry.id,
+                      child: GestureDetector(
+                        onTap: () async {
+                          await Navigator.of(context).push(
+                            MaterialPageRoute(
+                              allowSnapshotting: false,
+                              builder: (context) => EntryDetailPage(
+                                filtered: false,
+                                index: EntriesProvider.instance.getIndexOfEntry(
+                                  flashback.entry.id!,
+                                ),
                               ),
                             ),
-                          ),
-                        );
-                      },
-                      child: listView
-                          ? LargeEntryCardWidget(
-                              title: flashback.title,
-                              entry: flashback.entry,
-                              images: EntryImagesProvider.instance.getForEntry(
-                                flashback.entry,
+                          );
+                        },
+                        child: listView
+                            ? LargeEntryCardWidget(
+                                title: flashback.title,
+                                entry: flashback.entry,
+                                images:
+                                    EntryImagesProvider.instance.getForEntry(
+                                  flashback.entry,
+                                ),
+                              )
+                            : EntryCardWidget(
+                                title: flashback.title,
+                                entry: flashback.entry,
+                                images:
+                                    EntryImagesProvider.instance.getForEntry(
+                                  flashback.entry,
+                                ),
                               ),
-                            )
-                          : EntryCardWidget(
-                              title: flashback.title,
-                              entry: flashback.entry,
-                              images: EntryImagesProvider.instance.getForEntry(
-                                flashback.entry,
-                              ),
-                            ),
+                      ),
                     );
                   },
                 ),
       ],
+    );
+  }
+
+  Widget _buildFlashbackReveal({
+    required int index,
+    required int? entryId,
+    required Widget child,
+  }) {
+    final clampedIndex = index > 6 ? 6 : index;
+    return TweenAnimationBuilder<double>(
+      key: ValueKey('flashback-${entryId ?? index}'),
+      tween: Tween(begin: 0, end: 1),
+      duration: Duration(milliseconds: 160 + (clampedIndex * 35)),
+      curve: Curves.easeOutCubic,
+      builder: (context, value, child) {
+        return Opacity(
+          opacity: value,
+          child: Transform.translate(
+            offset: Offset(0, (1 - value) * 10),
+            child: child,
+          ),
+        );
+      },
+      child: child,
     );
   }
 

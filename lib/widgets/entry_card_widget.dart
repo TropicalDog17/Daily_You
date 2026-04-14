@@ -25,6 +25,10 @@ class EntryCardWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final overlayIconColor = theme.brightness == Brightness.dark
+        ? theme.colorScheme.onSurface
+        : theme.colorScheme.onPrimary;
+    final overlayShadowColor = theme.colorScheme.scrim.withValues(alpha: 0.6);
     final time = DateFormat.yMMMd(TimeManager.currentLocale(context))
         .format(entry.timeCreate);
     return Card.filled(
@@ -73,15 +77,32 @@ class EntryCardWidget extends StatelessWidget {
                         child: Padding(
                           padding: const EdgeInsets.all(8.0),
                           child: Icon(
-                            Icons.photo_library_rounded,
-                            color: Colors.white,
+                            Icons.collections_rounded,
+                            color: overlayIconColor,
                             shadows: [
                               Shadow(
-                                  color: Colors.black.withValues(alpha: 0.6),
+                                  color: overlayShadowColor,
                                   blurRadius: 6,
                                   offset: Offset(0, 0)),
                             ],
                           ),
+                        ),
+                      ),
+                    if (images.isNotEmpty &&
+                        entry.text.isNotEmpty &&
+                        !hideImage)
+                      Positioned(
+                        bottom: 8,
+                        left: 8,
+                        child: Icon(
+                          Icons.edit_note_rounded,
+                          color: overlayIconColor,
+                          shadows: [
+                            Shadow(
+                                color: overlayShadowColor,
+                                blurRadius: 6,
+                                offset: Offset(0, 0)),
+                          ],
                         ),
                       ),
                     if (images.isNotEmpty &&
@@ -94,10 +115,10 @@ class EntryCardWidget extends StatelessWidget {
                           images.first.mediaType == 'live_photo'
                               ? Icons.motion_photos_on_rounded
                               : Icons.play_circle_fill_rounded,
-                          color: Colors.white,
+                          color: overlayIconColor,
                           shadows: [
                             Shadow(
-                              color: Colors.black.withValues(alpha: 0.6),
+                              color: overlayShadowColor,
                               blurRadius: 6,
                               offset: Offset(0, 0),
                             ),

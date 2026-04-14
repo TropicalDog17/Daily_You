@@ -29,6 +29,7 @@ class _HidingWidgetState extends State<HidingWidget>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
   late final Animation<Offset> _offsetAnimation;
+  late final Animation<double> _fadeAnimation;
 
   @override
   void initState() {
@@ -41,7 +42,14 @@ class _HidingWidgetState extends State<HidingWidget>
       value: widget.shouldShow?.call() ?? true ? 0.0 : 1.0,
     );
 
-    _offsetAnimation = _createTween().animate(_controller);
+    final curvedAnimation = CurvedAnimation(
+      parent: _controller,
+      curve: Curves.easeOutCubic,
+      reverseCurve: Curves.easeInCubic,
+    );
+
+    _offsetAnimation = _createTween().animate(curvedAnimation);
+    _fadeAnimation = Tween<double>(begin: 1, end: 0).animate(curvedAnimation);
   }
 
   Tween<Offset> _createTween() {
@@ -101,9 +109,12 @@ class _HidingWidgetState extends State<HidingWidget>
 
   @override
   Widget build(BuildContext context) {
-    return SlideTransition(
-      position: _offsetAnimation,
-      child: widget.child,
+    return FadeTransition(
+      opacity: _fadeAnimation,
+      child: SlideTransition(
+        position: _offsetAnimation,
+        child: widget.child,
+      ),
     );
   }
 }

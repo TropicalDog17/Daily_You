@@ -15,7 +15,12 @@
       "mcp__serena__list_dir",
       "Bash(flutter analyze:*)",
       "Bash(gh issue:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit -m ':*)",
+      "Bash(git checkout:*)",
+      "Bash(git merge:*)",
+      "Bash(git stash:*)",
+      "Bash(git push:*)"
     ]
   }
 }

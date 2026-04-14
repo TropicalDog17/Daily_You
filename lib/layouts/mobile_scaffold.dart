@@ -1,7 +1,6 @@
 import 'dart:io';
 
 import 'package:daily_you/layouts/fast_page_view_scroll_physics.dart';
-import 'package:easy_debounce/easy_debounce.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:daily_you/l10n/generated/app_localizations.dart';
@@ -19,6 +18,8 @@ class MobileScaffold extends StatefulWidget {
 }
 
 class _MobileScaffoldState extends State<MobileScaffold> {
+  static const _pageAnimationDuration = Duration(milliseconds: 280);
+
   int currentIndex = 0;
   late final PageController _pageController;
   final List<bool> _isScrolled = [false, false, false];
@@ -39,6 +40,20 @@ class _MobileScaffoldState extends State<MobileScaffold> {
   void dispose() {
     _pageController.dispose();
     super.dispose();
+  }
+
+  void _selectPage(int index) {
+    if (index == currentIndex) return;
+
+    FocusManager.instance.primaryFocus?.unfocus();
+    setState(() {
+      currentIndex = index;
+    });
+    _pageController.animateToPage(
+      index,
+      duration: _pageAnimationDuration,
+      curve: Curves.easeOutCubic,
+    );
   }
 
   @override
@@ -70,7 +85,27 @@ class _MobileScaffoldState extends State<MobileScaffold> {
         backgroundColor: theme.scaffoldBackgroundColor,
         appBar: AppBar(
           centerTitle: isIOS,
-          title: Text(appBarsTitles[currentIndex]),
+          title: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 220),
+            switchInCurve: Curves.easeOutCubic,
+            switchOutCurve: Curves.easeInCubic,
+            transitionBuilder: (child, animation) {
+              return FadeTransition(
+                opacity: animation,
+                child: SlideTransition(
+                  position: Tween<Offset>(
+                    begin: const Offset(0, 0.18),
+                    end: Offset.zero,
+                  ).animate(animation),
+                  child: child,
+                ),
+              );
+            },
+            child: Text(
+              appBarsTitles[currentIndex],
+              key: ValueKey(currentIndex),
+            ),
+          ),
           elevation: _isScrolled[currentIndex] ? 1 : 0,
           scrolledUnderElevation: 1,
           actions: [
@@ -98,13 +133,11 @@ class _MobileScaffoldState extends State<MobileScaffold> {
           physics: const FastPageViewScrollPhysics(),
           onPageChanged: (index) {
             FocusManager.instance.primaryFocus?.unfocus();
-            EasyDebounce.debounce(
-              "page-change",
-              Duration(milliseconds: 150),
-              () => setState(() {
+            if (index != currentIndex) {
+              setState(() {
                 currentIndex = index;
-              }),
-            );
+              });
+            }
           },
           children: pages,
         ),
@@ -120,24 +153,14 @@ class _MobileScaffoldState extends State<MobileScaffold> {
                     color: theme.dividerColor.withValues(alpha: 0.35),
                   ),
                 ),
-                onTap: (index) {
-                  EasyDebounce.cancel("page-change");
-                  setState(() {
-                    currentIndex = index;
-                  });
-                  _pageController.animateToPage(
-                    index,
-                    duration: const Duration(milliseconds: 250),
-                    curve: Curves.easeOut,
-                  );
-                },
+                onTap: _selectPage,
                 items: [
                   BottomNavigationBarItem(
                     icon: const Icon(CupertinoIcons.house_fill),
                     label: AppLocalizations.of(context)!.pageHomeTitle,
                   ),
                   BottomNavigationBarItem(
-                    icon: const Icon(CupertinoIcons.photo_on_rectangle),
+                    icon: const Icon(CupertinoIcons.photo_fill),
                     label: AppLocalizations.of(context)!.pageGalleryTitle,
                   ),
                   BottomNavigationBarItem(
@@ -152,28 +175,21 @@ class _MobileScaffoldState extends State<MobileScaffold> {
                     NavigationDestinationLabelBehavior.onlyShowSelected,
                 elevation: 1,
                 selectedIndex: currentIndex,
-                onDestinationSelected: (index) {
-                  EasyDebounce.cancel("page-change");
-                  setState(() {
-                    currentIndex = index;
-                  });
-                  _pageController.animateToPage(
-                    index,
-                    duration: const Duration(milliseconds: 250),
-                    curve: Curves.easeOut,
-                  );
-                },
+                onDestinationSelected: _selectPage,
                 destinations: [
                   NavigationDestination(
-                    icon: const Icon(Icons.home_rounded),
+                    icon: const Icon(Icons.home_outlined),
+                    selectedIcon: const Icon(Icons.home_rounded),
                     label: AppLocalizations.of(context)!.pageHomeTitle,
                   ),
                   NavigationDestination(
-                    icon: const Icon(Icons.photo_library_rounded),
+                    icon: const Icon(Icons.photo_library_outlined),
+                    selectedIcon: const Icon(Icons.photo_library_rounded),
                     label: AppLocalizations.of(context)!.pageGalleryTitle,
                   ),
                   NavigationDestination(
-                    icon: const Icon(Icons.auto_graph_rounded),
+                    icon: const Icon(Icons.auto_graph_outlined),
+                    selectedIcon: const Icon(Icons.auto_graph_rounded),
                     label: AppLocalizations.of(context)!.pageStatisticsTitle,
                   ),
                 ],

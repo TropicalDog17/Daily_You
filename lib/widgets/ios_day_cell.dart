@@ -30,7 +30,7 @@ class IosDayCell extends StatelessWidget {
     final entryImagesProvider = Provider.of<EntryImagesProvider>(context);
     final configProvider = Provider.of<ConfigProvider>(context);
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final colorScheme = theme.colorScheme;
 
     final Entry? entry = entriesProvider.getEntryForDate(date);
     EntryImage? image;
@@ -48,12 +48,20 @@ class IosDayCell extends StatelessWidget {
       TimeManager.currentLocale(context),
     ).format(date).toUpperCase();
 
-    // Cell background
-    final Color cellBg =
-        isDark ? const Color(0xFF1C1C1E) : const Color(0xFFF2F2F7);
-
-    // Today highlight ring color
-    final Color todayRingColor = theme.colorScheme.primary;
+    final Color cellBg = colorScheme.surfaceContainerHighest;
+    final Color imageFallbackBg = colorScheme.scrim;
+    final Color todayRingColor = colorScheme.primary;
+    final Color futureLabelColor =
+        colorScheme.onSurface.withValues(alpha: 0.38);
+    final Color futureNumberColor =
+        colorScheme.onSurface.withValues(alpha: 0.24);
+    final Color imageLabelColor = colorScheme.onPrimary.withValues(alpha: 0.78);
+    final Color imageNumberColor = colorScheme.onPrimary;
+    final Color normalLabelColor = colorScheme.onSurfaceVariant;
+    final Color normalNumberColor = colorScheme.onSurface;
+    final Color mediaIndicatorColor = hasImage
+        ? colorScheme.onPrimary.withValues(alpha: 0.72)
+        : colorScheme.onSurfaceVariant.withValues(alpha: 0.78);
 
     return GestureDetector(
       onTap: isFuture
@@ -76,9 +84,11 @@ class IosDayCell extends StatelessWidget {
                 ));
               }
             },
-      child: Container(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        curve: Curves.easeOut,
         decoration: BoxDecoration(
-          color: hasImage ? Colors.black : cellBg,
+          color: hasImage ? imageFallbackBg : cellBg,
           borderRadius: BorderRadius.circular(14),
           border:
               isToday ? Border.all(color: todayRingColor, width: 2.0) : null,
@@ -88,10 +98,12 @@ class IosDayCell extends StatelessWidget {
           fit: StackFit.expand,
           children: [
             // Background image
-            if (hasImage)
+            if (image != null)
               Positioned.fill(
-                child: Opacity(
-                  opacity: 0.75,
+                child: AnimatedOpacity(
+                  duration: const Duration(milliseconds: 180),
+                  curve: Curves.easeOut,
+                  opacity: hasImage ? 0.75 : 0,
                   child: LocalImageLoader(
                     imagePath: image.imgPath,
                     cacheSize: 200,
@@ -112,12 +124,10 @@ class IosDayCell extends StatelessWidget {
                       fontWeight: FontWeight.w600,
                       letterSpacing: 0.3,
                       color: isFuture
-                          ? (isDark ? Colors.white24 : Colors.black26)
+                          ? futureLabelColor
                           : isToday
                               ? todayRingColor
-                              : (hasImage
-                                  ? Colors.white70
-                                  : (isDark ? Colors.white54 : Colors.black45)),
+                              : (hasImage ? imageLabelColor : normalLabelColor),
                     ),
                   ),
                   const SizedBox(height: 1),
@@ -129,14 +139,12 @@ class IosDayCell extends StatelessWidget {
                       fontWeight: isToday ? FontWeight.w800 : FontWeight.w600,
                       height: 1.1,
                       color: isFuture
-                          ? (isDark ? Colors.white12 : Colors.black12)
+                          ? futureNumberColor
                           : (isToday
                               ? todayRingColor
                               : (hasImage
-                                  ? Colors.white
-                                  : (isDark
-                                      ? Colors.white.withValues(alpha: 0.9)
-                                      : Colors.black87))),
+                                  ? imageNumberColor
+                                  : normalNumberColor)),
                     ),
                   ),
                   const Spacer(),
@@ -148,14 +156,12 @@ class IosDayCell extends StatelessWidget {
                           ? MoodIcon(moodValue: entry.mood, size: 16)
                           : Icon(
                               image.mediaType == 'video'
-                                  ? CupertinoIcons.play_fill
+                                  ? Icons.play_circle_fill_rounded
                                   : image.mediaType == 'live_photo'
                                       ? Icons.motion_photos_on_rounded
-                                      : CupertinoIcons.camera_fill,
-                              size: 12,
-                              color: hasImage
-                                  ? Colors.white60
-                                  : (isDark ? Colors.white38 : Colors.black38),
+                                      : Icons.photo_camera_rounded,
+                              size: 14,
+                              color: mediaIndicatorColor,
                             ),
                     ),
                 ],
