@@ -7,6 +7,7 @@ import 'package:daily_you/models/image.dart';
 import 'package:daily_you/providers/entries_provider.dart';
 import 'package:daily_you/providers/entry_images_provider.dart';
 import 'package:daily_you/time_manager.dart';
+import 'package:daily_you/widgets/day_photo_suggestions.dart';
 import 'package:daily_you/widgets/scaled_markdown.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -307,6 +308,32 @@ class EntryDetails extends StatelessWidget {
                   child: ScaledMarkdown(data: entry.text),
                 ),
               ),
+            DayPhotoSuggestionsSection(
+              key: ValueKey(entry.id),
+              date: entry.timeCreate,
+              onUsePhoto: (image) async {
+                final nextImages =
+                    images.map((existing) => existing.copy()).toList();
+                for (final existing in nextImages) {
+                  existing.imgRank += 1;
+                }
+                nextImages.add(image.copy(entryId: entry.id, imgRank: 0));
+
+                await Navigator.of(context).push(
+                  PageRouteBuilder(
+                    allowSnapshotting: false,
+                    fullscreenDialog: true,
+                    pageBuilder: (context, _, __) =>
+                        AddEditEntryPage(entry: entry, images: nextImages),
+                    transitionsBuilder:
+                        (context, animation, secondaryAnimation, child) {
+                      return FadeTransition(opacity: animation, child: child);
+                    },
+                    transitionDuration: const Duration(milliseconds: 200),
+                  ),
+                );
+              },
+            ),
             Padding(
               padding: const EdgeInsets.only(
                 left: 8,

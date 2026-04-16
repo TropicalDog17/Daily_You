@@ -123,7 +123,9 @@ class _IosCalendarGridState extends State<IosCalendarGrid>
         startDay += rows.isEmpty ? firstRowLength : 3) {
       final row = <DateTime?>[];
       final rowLength = rows.isEmpty ? firstRowLength : 3;
-      final endDay = startDay + rowLength - 1;
+      final endDay = startDay + rowLength - 1 > lastDay
+          ? lastDay
+          : startDay + rowLength - 1;
       for (int day = startDay; day <= endDay; day++) {
         row.add(DateTime(monthDate.year, monthDate.month, day));
       }

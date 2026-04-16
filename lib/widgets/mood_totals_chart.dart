@@ -1,4 +1,5 @@
 import 'package:daily_you/widgets/mood_icon.dart';
+import 'package:daily_you/widgets/stat_chart_card.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
@@ -24,10 +25,7 @@ class MoodTotalsChart extends StatefulWidget {
 }
 
 class _MoodTotalsChartState extends State<MoodTotalsChart> {
-  @override
-  void initState() {
-    super.initState();
-  }
+  int touchedGroupIndex = -1;
 
   BarChartGroupData generateBarGroup(
     int x,
@@ -40,7 +38,7 @@ class _MoodTotalsChartState extends State<MoodTotalsChart> {
         BarChartRodData(
           toY: value,
           color: color,
-          width: 16,
+          width: 18,
           borderRadius: const BorderRadius.only(
             topLeft: Radius.circular(8),
             topRight: Radius.circular(8),
@@ -51,35 +49,25 @@ class _MoodTotalsChartState extends State<MoodTotalsChart> {
     );
   }
 
-  int touchedGroupIndex = -1;
-
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 0, right: 42, bottom: 10, top: 8),
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return StatChartCard(
+      padding: const EdgeInsets.fromLTRB(12, 14, 12, 10),
       child: AspectRatio(
-        aspectRatio: 2,
+        aspectRatio: 1.9,
         child: BarChart(
           BarChartData(
             alignment: BarChartAlignment.spaceAround,
-            borderData: FlBorderData(
-              show: false,
-              border: Border.symmetric(
-                horizontal: BorderSide(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onSurface
-                      .withValues(alpha: 0.2),
-                ),
-              ),
-            ),
+            borderData: FlBorderData(show: false),
             titlesData: FlTitlesData(
               show: true,
               leftTitles: const AxisTitles(
                 drawBelowEverything: true,
                 sideTitles: SideTitles(
                   showTitles: true,
-                  reservedSize: 42,
+                  reservedSize: 32,
                 ),
               ),
               bottomTitles: AxisTitles(
@@ -89,11 +77,12 @@ class _MoodTotalsChartState extends State<MoodTotalsChart> {
                   getTitlesWidget: (value, meta) {
                     final index = value.toInt();
                     return SideTitleWidget(
-                        axisSide: meta.axisSide,
-                        child: _MoodLabelIconWidget(
-                          isSelected: touchedGroupIndex == index,
-                          mood: MoodTotalsChart.indexToMoodValueMapping[index]!,
-                        ));
+                      axisSide: meta.axisSide,
+                      child: _MoodLabelIconWidget(
+                        isSelected: touchedGroupIndex == index,
+                        mood: MoodTotalsChart.indexToMoodValueMapping[index]!,
+                      ),
+                    );
                   },
                 ),
               ),
@@ -103,28 +92,29 @@ class _MoodTotalsChartState extends State<MoodTotalsChart> {
             gridData: FlGridData(
               show: true,
               drawVerticalLine: false,
+              horizontalInterval: 1,
               getDrawingHorizontalLine: (value) => FlLine(
-                color: Theme.of(context)
-                    .colorScheme
-                    .onSurface
-                    .withValues(alpha: 0.16),
-                strokeWidth: 1,
+                color: colorScheme.onSurface.withValues(alpha: 0.1),
+                strokeWidth: value == 0 ? 1.4 : 1,
               ),
             ),
             barGroups: widget.moodCounts.entries.map((e) {
-              final index = e.key;
+              final mood = e.key;
               final data = e.value;
               return generateBarGroup(
-                  MoodTotalsChart.moodToIndexMapping[index]!,
-                  Theme.of(context).colorScheme.primary,
-                  data.toDouble());
+                MoodTotalsChart.moodToIndexMapping[mood]!,
+                _moodColor(colorScheme, mood),
+                data.toDouble(),
+              );
             }).toList(),
             barTouchData: BarTouchData(
               enabled: true,
               handleBuiltInTouches: false,
               touchTooltipData: BarTouchTooltipData(
-                tooltipBgColor: Colors.transparent,
-                tooltipMargin: 0,
+                tooltipBgColor: colorScheme.surface,
+                tooltipPadding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                tooltipMargin: 8,
                 getTooltipItem: (
                   BarChartGroupData group,
                   int groupIndex,
@@ -135,8 +125,8 @@ class _MoodTotalsChartState extends State<MoodTotalsChart> {
                     rod.toY.toInt().toString(),
                     TextStyle(
                       fontWeight: FontWeight.w700,
-                      color: rod.color,
-                      fontSize: 17,
+                      color: rod.color ?? colorScheme.primary,
+                      fontSize: 15,
                     ),
                   );
                 },
@@ -160,6 +150,26 @@ class _MoodTotalsChartState extends State<MoodTotalsChart> {
       ),
     );
   }
+
+  Color _moodColor(ColorScheme colorScheme, int mood) {
+    switch (mood) {
+      case -2:
+        return colorScheme.error;
+      case -1:
+        return Color.alphaBlend(
+          colorScheme.error.withValues(alpha: 0.18),
+          colorScheme.primary,
+        );
+      case 0:
+        return colorScheme.tertiary;
+      case 1:
+        return colorScheme.primary;
+      case 2:
+        return colorScheme.secondary;
+      default:
+        return colorScheme.primary;
+    }
+  }
 }
 
 class _MoodLabelIconWidget extends ImplicitlyAnimatedWidget {
@@ -182,9 +192,10 @@ class _IconWidgetState extends AnimatedWidgetBaseState<_MoodLabelIconWidget> {
   Widget build(BuildContext context) {
     final scale = 1 + _scaleTween!.evaluate(animation) * 0.5;
     return Transform(
-        transform: Matrix4.rotationZ(0).scaledByDouble(scale, scale, 1, 1),
-        origin: const Offset(14, 14),
-        child: MoodIcon(moodValue: widget.mood));
+      transform: Matrix4.rotationZ(0).scaledByDouble(scale, scale, 1, 1),
+      origin: const Offset(14, 14),
+      child: MoodIcon(moodValue: widget.mood),
+    );
   }
 
   @override

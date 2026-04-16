@@ -4,15 +4,13 @@ import 'package:daily_you/models/image.dart';
 import 'package:daily_you/providers/entries_provider.dart';
 import 'package:daily_you/providers/entry_images_provider.dart';
 import 'package:daily_you/time_manager.dart';
+import 'package:daily_you/pages/edit_entry_page.dart';
+import 'package:daily_you/pages/entry_detail_page.dart';
 import 'package:daily_you/widgets/local_image_loader.dart';
 import 'package:daily_you/widgets/mood_icon.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-
-import '../pages/edit_entry_page.dart';
-import '../pages/entry_detail_page.dart';
 
 class IosDayCell extends StatelessWidget {
   final DateTime date;
@@ -63,27 +61,28 @@ class IosDayCell extends StatelessWidget {
         ? colorScheme.onPrimary.withValues(alpha: 0.72)
         : colorScheme.onSurfaceVariant.withValues(alpha: 0.78);
 
+    Future<void> handleTap() async {
+      entriesProvider.setSelectedDate(date);
+      if (entry != null) {
+        await Navigator.of(context).push(MaterialPageRoute(
+          builder: (context) => EntryDetailPage(
+            filtered: false,
+            index: entriesProvider.getIndexOfEntry(entry.id!),
+          ),
+        ));
+        return;
+      }
+
+      await Navigator.of(context).push(MaterialPageRoute(
+        builder: (context) => AddEditEntryPage(
+          overrideCreateDate: TimeManager.currentTimeOnDifferentDate(date)
+              .copyWith(isUtc: false),
+        ),
+      ));
+    }
+
     return GestureDetector(
-      onTap: isFuture
-          ? null
-          : () async {
-              if (entry != null) {
-                await Navigator.of(context).push(CupertinoPageRoute(
-                  builder: (context) => EntryDetailPage(
-                    filtered: false,
-                    index: entriesProvider.getIndexOfEntry(entry.id!),
-                  ),
-                ));
-              } else {
-                await Navigator.of(context).push(CupertinoPageRoute(
-                  builder: (context) => AddEditEntryPage(
-                    overrideCreateDate:
-                        TimeManager.currentTimeOnDifferentDate(date)
-                            .copyWith(isUtc: false),
-                  ),
-                ));
-              }
-            },
+      onTap: isFuture ? null : handleTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
         curve: Curves.easeOut,

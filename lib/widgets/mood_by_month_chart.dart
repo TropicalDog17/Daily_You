@@ -1,11 +1,11 @@
-import 'package:daily_you/models/entry.dart';
+import 'package:daily_you/l10n/generated/app_localizations.dart';
 import 'package:daily_you/providers/entries_provider.dart';
 import 'package:daily_you/time_manager.dart';
 import 'package:daily_you/widgets/mood_icon.dart';
+import 'package:daily_you/widgets/stat_chart_card.dart';
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:daily_you/l10n/generated/app_localizations.dart';
-import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
@@ -24,21 +24,15 @@ class _MoodByMonthChartState extends State<MoodByMonthChart> {
   bool notEnoughData = true;
 
   @override
-  void initState() {
-    super.initState();
-  }
-
-  @override
   Widget build(BuildContext context) {
     final entriesProvider = Provider.of<EntriesProvider>(context);
-    List<Entry> entries = entriesProvider.entries;
-    Map<String, List<double>> moodsByMonth = {};
+    final entries = entriesProvider.entries;
+    final moodsByMonth = <String, List<double>>{};
 
-    // Collect moods by month
-    for (Entry entry in entries) {
+    for (final entry in entries) {
       if (entry.mood == null) continue;
-      String monthKey =
-          "${entry.timeCreate.year}-${entry.timeCreate.month.toString().padLeft(2, '0')}";
+      final monthKey =
+          '${entry.timeCreate.year}-${entry.timeCreate.month.toString().padLeft(2, '0')}';
       if (moodsByMonth[monthKey] != null) {
         moodsByMonth[monthKey]!.add(entry.mood!.toDouble());
       } else {
@@ -47,105 +41,72 @@ class _MoodByMonthChartState extends State<MoodByMonthChart> {
       }
     }
 
-    // Average the mood for each month
     averageMood.clear();
-    for (var month in moodsByMonth.keys) {
+    for (final month in moodsByMonth.keys) {
       averageMood[month] = moodsByMonth[month]!.reduce((a, b) => a + b) /
           moodsByMonth[month]!.length;
     }
 
-    // Ensure there is enough data
     notEnoughData = averageMood.length < 2;
 
-    // Fill in empty months
     sortedKeys = averageMood.keys.toList()..sort();
-    var allMonths = _generateCompleteMonthRange(sortedKeys, monthsPerPage);
+    final allMonths = _generateCompleteMonthRange(sortedKeys, monthsPerPage);
     sortedKeys = allMonths.toList()..sort();
 
-    // Determine the subset of data for the current page
     int endIndex = (sortedKeys.length - (currentPage * monthsPerPage))
         .clamp(0, sortedKeys.length);
     int startIndex = (endIndex - monthsPerPage).clamp(0, endIndex);
-    // Ensure page is full if possible
-    int currentPageSize = endIndex - startIndex;
+    final currentPageSize = endIndex - startIndex;
     if (currentPageSize < monthsPerPage) {
       endIndex = (endIndex + (monthsPerPage - currentPageSize))
           .clamp(0, sortedKeys.length);
     }
 
-    List<String> currentPageKeys = sortedKeys.sublist(startIndex, endIndex);
-
-    Map<String, double?> currentData = {
-      for (var key in currentPageKeys) key: averageMood[key]
+    final currentPageKeys = sortedKeys.sublist(startIndex, endIndex);
+    final currentData = {
+      for (final key in currentPageKeys) key: averageMood[key]
     };
 
-    return Center(
+    return StatChartCard(
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 10),
       child: notEnoughData
-          ? Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: AspectRatio(
-                aspectRatio: 2,
-                child: Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(24),
-                    gradient: LinearGradient(
-                      colors: [
-                        Theme.of(context)
-                            .colorScheme
-                            .surfaceContainerHighest
-                            .withValues(alpha: 0.95),
-                        Theme.of(context)
-                            .colorScheme
-                            .surfaceContainerHigh
-                            .withValues(alpha: 0.82),
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
+          ? AspectRatio(
+              aspectRatio: 1.9,
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      CupertinoIcons.chart_bar,
+                      size: 54,
+                      color: Theme.of(context).disabledColor,
                     ),
-                    border: Border.all(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .outline
-                          .withValues(alpha: 0.25),
+                    const SizedBox(height: 8),
+                    Text(
+                      AppLocalizations.of(context)!.statisticsNotEnoughData,
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                        color: Theme.of(context).disabledColor,
+                      ),
                     ),
-                  ),
-                  child: Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          CupertinoIcons.chart_bar,
-                          size: 54,
-                          color: Theme.of(context).disabledColor,
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          AppLocalizations.of(context)!.statisticsNotEnoughData,
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600,
-                            color: Theme.of(context).disabledColor,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                  ],
                 ),
               ),
             )
           : Column(
               children: [
                 _buildPaginationControls(currentPageKeys, context),
-                Padding(
-                  padding: const EdgeInsets.only(
-                      left: 0, right: 42, bottom: 0, top: 8),
-                  child: AspectRatio(
-                    aspectRatio: 2,
-                    child: LineChart(_buildLineChartData(
-                        Theme.of(context).colorScheme.primary,
-                        currentData,
-                        currentPageKeys,
-                        context)),
+                const SizedBox(height: 8),
+                AspectRatio(
+                  aspectRatio: 1.9,
+                  child: LineChart(
+                    _buildLineChartData(
+                      Theme.of(context).colorScheme.primary,
+                      currentData,
+                      currentPageKeys,
+                      context,
+                    ),
                   ),
                 ),
               ],
@@ -167,8 +128,8 @@ class _MoodByMonthChartState extends State<MoodByMonthChart> {
             ),
           ),
         Text(
-          "${_formatMonthYear(keys.first, context)} - ${_formatMonthYear(keys.last, context)}",
-          style: const TextStyle(fontWeight: FontWeight.w600),
+          '${_formatMonthYear(keys.first, context)} - ${_formatMonthYear(keys.last, context)}',
+          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
         ),
         if (_totalPages() > 1)
           IconButton(
@@ -199,12 +160,17 @@ class _MoodByMonthChartState extends State<MoodByMonthChart> {
     });
   }
 
-  LineChartData _buildLineChartData(Color color, Map<String, double?> data,
-      List<String> keys, BuildContext context) {
-    List<FlSpot?> spots = keys.asMap().entries.map((entry) {
-      int index = entry.key;
-      String key = entry.value;
-      double? mood = data[key];
+  LineChartData _buildLineChartData(
+    Color color,
+    Map<String, double?> data,
+    List<String> keys,
+    BuildContext context,
+  ) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final spots = keys.asMap().entries.map((entry) {
+      final index = entry.key;
+      final key = entry.value;
+      final mood = data[key];
 
       return mood != null ? FlSpot(index.toDouble(), mood) : null;
     }).toList();
@@ -214,14 +180,68 @@ class _MoodByMonthChartState extends State<MoodByMonthChart> {
       maxX: keys.length - 1.toDouble(),
       minY: -2,
       maxY: 2,
-      lineTouchData: const LineTouchData(enabled: false),
+      clipData: const FlClipData.all(),
+      lineTouchData: LineTouchData(
+        handleBuiltInTouches: true,
+        getTouchedSpotIndicator: (barData, spotIndexes) {
+          return spotIndexes.map((index) {
+            return TouchedSpotIndicatorData(
+              FlLine(
+                color: colorScheme.primary.withValues(alpha: 0.18),
+                strokeWidth: 1,
+              ),
+              FlDotData(
+                getDotPainter: (spot, percent, bar, i) => FlDotCirclePainter(
+                  radius: 5,
+                  color: colorScheme.surface,
+                  strokeWidth: 2.5,
+                  strokeColor: color,
+                ),
+              ),
+            );
+          }).toList();
+        },
+        touchTooltipData: LineTouchTooltipData(
+          tooltipBgColor: colorScheme.surface,
+          tooltipPadding:
+              const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          getTooltipItems: (spots) {
+            return spots.map((spot) {
+              return LineTooltipItem(
+                _formatMonthYear(keys[spot.x.toInt()], context),
+                TextStyle(
+                  color: colorScheme.onSurface,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 12,
+                ),
+                children: [
+                  TextSpan(
+                    text: '\n${spot.y.toStringAsFixed(1)}',
+                    style: TextStyle(
+                      color: color,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              );
+            }).toList();
+          },
+        ),
+      ),
       lineBarsData: [
         if (spots.whereType<FlSpot>().toList().isNotEmpty)
           LineChartBarData(
             spots: spots.whereType<FlSpot>().toList(),
             isCurved: true,
             color: color,
-            barWidth: 3,
+            gradient: LinearGradient(
+              colors: [
+                colorScheme.primary,
+                colorScheme.secondary,
+              ],
+            ),
+            barWidth: 4,
             isStrokeCapRound: true,
             dotData: FlDotData(
               show: true,
@@ -229,20 +249,27 @@ class _MoodByMonthChartState extends State<MoodByMonthChart> {
                 return FlDotCirclePainter(
                   color: color,
                   radius: 4.2,
-                  strokeColor: Theme.of(context).colorScheme.surface,
+                  strokeColor: colorScheme.surface,
                   strokeWidth: 2,
                 );
               },
             ),
             belowBarData: BarAreaData(
               show: true,
-              color: color.withValues(alpha: 0.14),
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  colorScheme.primary.withValues(alpha: 0.22),
+                  colorScheme.secondary.withValues(alpha: 0.04),
+                ],
+              ),
             ),
           ),
       ],
       titlesData: FlTitlesData(
-          bottomTitles: AxisTitles(
-              sideTitles: SideTitles(
+        bottomTitles: AxisTitles(
+          sideTitles: SideTitles(
             showTitles: true,
             getTitlesWidget: (value, _) => SizedBox(
               height: 20,
@@ -250,72 +277,63 @@ class _MoodByMonthChartState extends State<MoodByMonthChart> {
               child: FittedBox(
                 fit: BoxFit.scaleDown,
                 child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 2.0),
-                    child: Text(_formatMonth(
-                        value >= 0 && value < keys.length
-                            ? keys[value.toInt()]
-                            : '',
-                        context))),
+                  padding: const EdgeInsets.symmetric(horizontal: 2.0),
+                  child: Text(
+                    _formatMonth(
+                      value >= 0 && value < keys.length
+                          ? keys[value.toInt()]
+                          : '',
+                      context,
+                    ),
+                  ),
+                ),
               ),
             ),
             interval: 1,
-            reservedSize: 32,
-          )),
-          leftTitles: AxisTitles(
-            sideTitles: SideTitles(
-              showTitles: true,
-              interval: 1,
-              reservedSize: 42,
-              getTitlesWidget: (value, meta) {
-                final index = value.toInt();
-                return SideTitleWidget(
-                    axisSide: meta.axisSide,
-                    child: MoodIcon(
-                      moodValue: index,
-                    ));
-              },
-            ),
+            reservedSize: 28,
           ),
-          topTitles: const AxisTitles(),
-          rightTitles: const AxisTitles()),
+        ),
+        leftTitles: AxisTitles(
+          sideTitles: SideTitles(
+            showTitles: true,
+            interval: 1,
+            reservedSize: 32,
+            getTitlesWidget: (value, meta) {
+              final index = value.toInt();
+              return SideTitleWidget(
+                axisSide: meta.axisSide,
+                child: MoodIcon(moodValue: index),
+              );
+            },
+          ),
+        ),
+        topTitles: const AxisTitles(),
+        rightTitles: const AxisTitles(),
+      ),
       gridData: FlGridData(
         show: true,
         drawHorizontalLine: true,
         horizontalInterval: 1,
-        drawVerticalLine: true,
+        drawVerticalLine: false,
         verticalInterval: 1,
         getDrawingHorizontalLine: (value) => FlLine(
-          color:
-              Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.16),
-          strokeWidth: 1,
-        ),
-        getDrawingVerticalLine: (value) => FlLine(
-          color:
-              Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.08),
-          strokeWidth: 1,
+          color: colorScheme.onSurface.withValues(alpha: 0.1),
+          strokeWidth: value == 0 ? 1.4 : 1,
         ),
       ),
-      borderData: FlBorderData(
-          show: false,
-          border: Border.symmetric(
-              horizontal: BorderSide(
-            color:
-                Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.2),
-            width: 1,
-          ))),
+      borderData: FlBorderData(show: false),
     );
   }
 
   String _formatMonth(String dateKey, BuildContext context) {
-    DateTime date = DateFormat('yyyy-MM').parse(dateKey);
-    return DateFormat('MMM', TimeManager.currentLocale(context))
-        .format(date); // Return shorthand month (e.g., "Jan")
+    final date = DateFormat('yyyy-MM').parse(dateKey);
+    return DateFormat('MMM', TimeManager.currentLocale(context)).format(date);
   }
 
   String _formatMonthYear(String dateKey, BuildContext context) {
-    DateTime date = DateFormat('yyyy-MM').parse(dateKey);
+    final date = DateFormat('yyyy-MM').parse(dateKey);
     return DateFormat('MMM yyyy', TimeManager.currentLocale(context))
-        .format(date); // Return shorthand month (e.g., "Jan")
+        .format(date);
   }
 
   List<String> _generateCompleteMonthRange(
@@ -324,25 +342,24 @@ class _MoodByMonthChartState extends State<MoodByMonthChart> {
       return List.empty();
     }
 
-    List<DateTime> parsedDates =
+    final parsedDates =
         keys.map((key) => DateFormat('yyyy-MM').parse(key)).toList()..sort();
 
-    DateTime startDate = parsedDates.first;
-    DateTime endDate = parsedDates.last;
+    final startDate = parsedDates.first;
+    var endDate = parsedDates.last;
 
-    // Start chart on left side if page can't be filled
-    DateTime minEndDate = DateTime(
+    final minEndDate = DateTime(
         startDate.year, startDate.month + (monthsPerPage - 1), startDate.day);
     if (endDate.isBefore(minEndDate)) {
       endDate = minEndDate;
     }
 
-    List<String> allMonths = [];
-    DateTime current = startDate;
+    final allMonths = <String>[];
+    var current = startDate;
 
     while (!current.isAfter(endDate)) {
-      String monthKey =
-          "${current.year}-${current.month.toString().padLeft(2, '0')}";
+      final monthKey =
+          '${current.year}-${current.month.toString().padLeft(2, '0')}';
       allMonths.add(monthKey);
       current = DateTime(current.year, current.month + 1);
     }

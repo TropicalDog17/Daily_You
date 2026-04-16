@@ -7,6 +7,7 @@ import 'package:daily_you/notification_manager.dart';
 import 'package:daily_you/providers/entries_provider.dart';
 import 'package:daily_you/providers/entry_images_provider.dart';
 import 'package:daily_you/time_manager.dart';
+import 'package:daily_you/widgets/day_photo_suggestions.dart';
 import 'package:daily_you/widgets/edit_toolbar.dart';
 import 'package:daily_you/widgets/entry_image_editable_list.dart';
 import 'package:daily_you/widgets/template_select_button.dart';
@@ -203,7 +204,7 @@ class _AddEditEntryPageState extends State<AddEditEntryPage>
                         StatefulBuilder(
                           builder: (context, setState) => EntryMoodPicker(
                             actions: [
-                              _changeDateButton(),
+                              Expanded(child: _changeDateButton()),
                               EntryImagePicker(
                                 onChangedImage: (newImages) {
                                   _openedCamera = true;
@@ -223,6 +224,12 @@ class _AddEditEntryPageState extends State<AddEditEntryPage>
                             },
                           ),
                         ),
+                        if (entryDate != null)
+                          DayPhotoSuggestionsSection(
+                            key: ValueKey(entryDate),
+                            date: entryDate!,
+                            onUsePhoto: (image) => _addImage([image]),
+                          ),
                         StatefulBuilder(
                           builder: (context, setState) => EntryTextEditor(
                             text: text,
@@ -277,16 +284,7 @@ class _AddEditEntryPageState extends State<AddEditEntryPage>
     final theme = Theme.of(context);
     final entriesProvider = Provider.of<EntriesProvider>(context);
 
-    return TextButton.icon(
-      icon: SvgPicture.asset(
-        'assets/icons/calendar_event.svg',
-        colorFilter: ColorFilter.mode(
-          theme.colorScheme.primary,
-          BlendMode.srcIn,
-        ),
-        width: 24,
-        height: 24,
-      ),
+    return TextButton(
       onPressed: () async {
         DateTime? pickedDate = await showDatePicker(
           selectableDayPredicate: (date) =>
@@ -307,11 +305,30 @@ class _AddEditEntryPageState extends State<AddEditEntryPage>
           await _saveEntry();
         }
       },
-      label: Text(
-        DateFormat.yMMMEd(
-          TimeManager.currentLocale(context),
-        ).format(entryDate!),
-        style: TextStyle(fontSize: 16),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SvgPicture.asset(
+            'assets/icons/calendar_event.svg',
+            colorFilter: ColorFilter.mode(
+              theme.colorScheme.primary,
+              BlendMode.srcIn,
+            ),
+            width: 24,
+            height: 24,
+          ),
+          const SizedBox(width: 8),
+          Flexible(
+            child: Text(
+              DateFormat.yMMMEd(
+                TimeManager.currentLocale(context),
+              ).format(entryDate!),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 16),
+            ),
+          ),
+        ],
       ),
     );
   }

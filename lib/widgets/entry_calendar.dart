@@ -120,8 +120,7 @@ class _EntryCalendarState extends State<EntryCalendar>
             focusedDay: entriesProvider.selectedDate,
             lastDay: DateTime.now(),
             firstDay: DateTime.utc(2000),
-            onPageChanged: (DateTime date) =>
-                entriesProvider.selectedDate = date,
+            onPageChanged: entriesProvider.setSelectedDate,
             headerStyle: HeaderStyle(
                 leftChevronIcon: Icon(Icons.chevron_left,
                     color: theme.colorScheme.onSurfaceVariant),

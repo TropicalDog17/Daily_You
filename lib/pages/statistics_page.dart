@@ -38,13 +38,13 @@ class _StatsPageState extends State<StatsPage>
   Widget _sectionTitle(BuildContext context, String title) {
     final isIOS = Theme.of(context).platform == TargetPlatform.iOS;
     return Padding(
-      padding: const EdgeInsets.only(top: 4, bottom: 4),
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 6),
       child: Text(
         title,
         style: TextStyle(
-          fontSize: isIOS ? 18 : 17,
+          fontSize: isIOS ? 20 : 18,
           fontWeight: isIOS ? FontWeight.w700 : FontWeight.w600,
-          letterSpacing: isIOS ? -0.2 : 0,
+          letterSpacing: isIOS ? -0.3 : 0,
         ),
       ),
     );
@@ -135,7 +135,7 @@ class _StatsPageState extends State<StatsPage>
           ),
         ),
         Padding(
-          padding: const EdgeInsets.all(8.0),
+          padding: const EdgeInsets.fromLTRB(8, 12, 8, 4),
           child: Center(
             child: StatsRangeSelector(
               statsRange: statsRange,
@@ -147,22 +147,18 @@ class _StatsPageState extends State<StatsPage>
             ),
           ),
         ),
-        Center(
-          child: _sectionTitle(
-            context,
-            AppLocalizations.of(context)!
-                .chartSummaryTitle(AppLocalizations.of(context)!.tagMoodTitle),
-          ),
+        _sectionTitle(
+          context,
+          AppLocalizations.of(context)!
+              .chartSummaryTitle(AppLocalizations.of(context)!.tagMoodTitle),
         ),
         MoodTotalsChart(
           moodCounts: getMoodTotals(entriesInRange),
         ),
-        Center(
-          child: _sectionTitle(
-            context,
-            AppLocalizations.of(context)!
-                .chartByDayTitle(AppLocalizations.of(context)!.tagMoodTitle),
-          ),
+        _sectionTitle(
+          context,
+          AppLocalizations.of(context)!
+              .chartByDayTitle(AppLocalizations.of(context)!.tagMoodTitle),
         ),
         MoodByDayChart(
           averageMood: getMoodsByDay(entriesInRange),

@@ -1,6 +1,7 @@
 import 'dart:ui' as ui;
 
 import 'package:daily_you/config_provider.dart';
+import 'package:daily_you/models/entry.dart';
 import 'package:daily_you/models/image.dart';
 import 'package:daily_you/providers/entries_provider.dart';
 import 'package:daily_you/providers/entry_images_provider.dart';
@@ -11,7 +12,6 @@ import 'package:daily_you/widgets/mood_icon.dart';
 import 'package:provider/provider.dart';
 import 'package:table_calendar/table_calendar.dart';
 
-import '../models/entry.dart';
 import '../pages/edit_entry_page.dart';
 import '../pages/entry_detail_page.dart';
 
@@ -40,6 +40,28 @@ class EntryDayCell extends StatelessWidget {
     }
 
     bool showMood = configProvider.get(ConfigKey.calendarViewMode) == 'mood';
+
+    Future<void> handleTap() async {
+      entriesProvider.setSelectedDate(date);
+      if (entry != null) {
+        await Navigator.of(context).push(MaterialPageRoute(
+          allowSnapshotting: false,
+          builder: (context) => EntryDetailPage(
+            filtered: false,
+            index: entriesProvider.getIndexOfEntry(entry.id!),
+          ),
+        ));
+        return;
+      }
+
+      await Navigator.of(context).push(MaterialPageRoute(
+        allowSnapshotting: false,
+        builder: (context) => AddEditEntryPage(
+          overrideCreateDate: TimeManager.currentTimeOnDifferentDate(date)
+              .copyWith(isUtc: false),
+        ),
+      ));
+    }
 
     if (entry != null) {
       if (showMood || image == null) {
@@ -70,15 +92,7 @@ class EntryDayCell extends StatelessWidget {
               ),
             ),
           ),
-          onTap: () async {
-            await Navigator.of(context).push(MaterialPageRoute(
-              allowSnapshotting: false,
-              builder: (context) => EntryDetailPage(
-                filtered: false,
-                index: entriesProvider.getIndexOfEntry(entry.id!),
-              ),
-            ));
-          },
+          onTap: handleTap,
         );
       } else {
         // Show image
@@ -127,14 +141,7 @@ class EntryDayCell extends StatelessWidget {
               ],
             ),
           ),
-          onTap: () async {
-            await Navigator.of(context).push(MaterialPageRoute(
-              allowSnapshotting: false,
-              builder: (context) => EntryDetailPage(
-                  filtered: false,
-                  index: entriesProvider.getIndexOfEntry(entry.id!)),
-            ));
-          },
+          onTap: handleTap,
         );
       }
     } else {
@@ -150,15 +157,7 @@ class EntryDayCell extends StatelessWidget {
                       color: Theme.of(context).colorScheme.primary)
                   : TextStyle(fontSize: 16)),
         ),
-        onTap: () async {
-          await Navigator.of(context).push(MaterialPageRoute(
-            allowSnapshotting: false,
-            builder: (context) => AddEditEntryPage(
-              overrideCreateDate: TimeManager.currentTimeOnDifferentDate(date)
-                  .copyWith(isUtc: false),
-            ),
-          ));
-        },
+        onTap: handleTap,
       );
     }
   }
