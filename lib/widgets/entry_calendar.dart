@@ -25,9 +25,10 @@ class EntryCalendar extends StatefulWidget {
 
 class _EntryCalendarState extends State<EntryCalendar>
     with AutomaticKeepAliveClientMixin {
-  Map<int, ui.Image> dayNumberCache = {};
-  bool dayNumberCacheCreated = false;
+  Map<int, ui.Image> _dayNumberCache = {};
+  DateTime _focusedDay = DateTime.now();
   double? _lastDpr;
+  int _cacheGeneration = 0;
 
   @override
   void didChangeDependencies() {
@@ -42,6 +43,12 @@ class _EntryCalendarState extends State<EntryCalendar>
 
   @override
   bool get wantKeepAlive => true;
+
+  @override
+  void dispose() {
+    _disposeDayNumberCache();
+    super.dispose();
+  }
 
   Widget _disabledDay(DateTime date) {
     return Center(
@@ -90,11 +97,36 @@ class _EntryCalendarState extends State<EntryCalendar>
   }
 
   Future<void> _createDayNumberCache(double dpr) async {
+    final generation = ++_cacheGeneration;
+    final nextCache = <int, ui.Image>{};
+
     for (int i = 1; i < 32; i++) {
-      dayNumberCache[i] = await _bakeDayNumber(i.toString(), dpr);
+      nextCache[i] = await _bakeDayNumber(i.toString(), dpr);
+
+      if (!mounted || generation != _cacheGeneration) {
+        for (final image in nextCache.values) {
+          image.dispose();
+        }
+        return;
+      }
     }
+
+    _disposeDayNumberCache();
     setState(() {
-      dayNumberCacheCreated = true;
+      _dayNumberCache = nextCache;
+    });
+  }
+
+  void _disposeDayNumberCache() {
+    for (final image in _dayNumberCache.values) {
+      image.dispose();
+    }
+    _dayNumberCache = {};
+  }
+
+  void _setFocusedDay(DateTime date) {
+    setState(() {
+      _focusedDay = date;
     });
   }
 
@@ -104,8 +136,8 @@ class _EntryCalendarState extends State<EntryCalendar>
     final entriesProvider = Provider.of<EntriesProvider>(context);
     final configProvider = Provider.of<ConfigProvider>(context);
     final theme = Theme.of(context);
-    return !dayNumberCacheCreated
-        ? SizedBox()
+    return _dayNumberCache.isEmpty
+        ? const SizedBox.shrink()
         : TableCalendar(
             locale: TimeManager.currentLocale(context),
             rowHeight: 57,
@@ -117,10 +149,10 @@ class _EntryCalendarState extends State<EntryCalendar>
             availableCalendarFormats: const {
               CalendarFormat.month: 'Month',
             },
-            focusedDay: entriesProvider.selectedDate,
+            focusedDay: _focusedDay,
             lastDay: DateTime.now(),
             firstDay: DateTime.utc(2000),
-            onPageChanged: entriesProvider.setSelectedDate,
+            onPageChanged: _setFocusedDay,
             headerStyle: HeaderStyle(
                 leftChevronIcon: Icon(Icons.chevron_left,
                     color: theme.colorScheme.onSurfaceVariant),
@@ -154,19 +186,19 @@ class _EntryCalendarState extends State<EntryCalendar>
                             DateTime? pickedDate = await showDatePicker(
                               initialDatePickerMode: DatePickerMode.day,
                               context: context,
-                              initialDate: entriesProvider.selectedDate,
+                              initialDate: _focusedDay,
                               firstDate: DateTime.utc(2000),
                               lastDate: DateTime.now(),
                             );
                             if (pickedDate != null) {
-                              // Update now to jump to the selected day on the calendar
-                              entriesProvider.setSelectedDate(pickedDate);
+                              _setFocusedDay(pickedDate);
 
                               Entry? pickedEntry =
                                   entriesProvider.getEntryForDate(pickedDate);
 
                               if (pickedEntry != null) {
                                 // Open entry
+                                if (!context.mounted) return;
                                 await Navigator.of(context)
                                     .push(MaterialPageRoute(
                                   allowSnapshotting: false,
@@ -177,6 +209,7 @@ class _EntryCalendarState extends State<EntryCalendar>
                                 ));
                               } else {
                                 // Create new entry
+                                if (!context.mounted) return;
                                 await Navigator.of(context)
                                     .push(MaterialPageRoute(
                                   allowSnapshotting: false,
@@ -209,10 +242,9 @@ class _EntryCalendarState extends State<EntryCalendar>
                         onTap: () async {
                           final selectedDate = await showYearMonthPicker(
                               context,
-                              initialDate: entriesProvider.selectedDate);
+                              initialDate: _focusedDay);
                           if (selectedDate != null) {
-                            // Update now to jump to the selected day on the calendar
-                            entriesProvider.setSelectedDate(selectedDate);
+                            _setFocusedDay(selectedDate);
                           }
                         },
                       ),
@@ -244,13 +276,11 @@ class _EntryCalendarState extends State<EntryCalendar>
                           );
                         },
                         child: (!TimeManager.isSameMonth(
-                                entriesProvider.selectedDate, DateTime.now()))
+                                _focusedDay, DateTime.now()))
                             ? IconButton(
                                 key: ValueKey('todayButton'),
                                 onPressed: () async {
-                                  // Update now to jump to today on the calendar
-                                  entriesProvider
-                                      .setSelectedDate(DateTime.now());
+                                  _setFocusedDay(DateTime.now());
                                 },
                                 icon: SvgPicture.asset(
                                   'assets/icons/calendar_latest.svg',
@@ -272,18 +302,18 @@ class _EntryCalendarState extends State<EntryCalendar>
               return EntryDayCell(
                   date: date,
                   currentMonth: currentMonth,
-                  dayNumber: dayNumberCache[date.day]!);
+                  dayNumber: _dayNumberCache[date.day]!);
             }, selectedBuilder: (context, date, currentMonth) {
               return EntryDayCell(
                   date: date,
                   currentMonth: currentMonth,
-                  dayNumber: dayNumberCache[date.day]!);
+                  dayNumber: _dayNumberCache[date.day]!);
             }, todayBuilder: (context, date, currentMonth) {
               if (TimeManager.isSameMonth(date, currentMonth)) {
                 return EntryDayCell(
                     date: date,
                     currentMonth: currentMonth,
-                    dayNumber: dayNumberCache[date.day]!);
+                    dayNumber: _dayNumberCache[date.day]!);
               } else {
                 return _disabledDay(date);
               }

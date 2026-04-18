@@ -34,7 +34,7 @@ class _LaunchPageState extends State<LaunchPage> {
     _checkDatabaseConnection();
   }
 
-  _updateAppShortcuts(AppLocalizations localization) {
+  void _updateAppShortcuts(AppLocalizations localization) {
     final QuickActions quickActions = const QuickActions();
     quickActions.initialize((shortcutType) {
       if (shortcutType == 'action_log_today') {
@@ -58,7 +58,9 @@ class _LaunchPageState extends State<LaunchPage> {
     ]);
   }
 
-  _storeLocalizedNotificationStrings(AppLocalizations localization) async {
+  Future<void> _storeLocalizedNotificationStrings(
+    AppLocalizations localization,
+  ) async {
     var prefs = await SharedPreferences.getInstance();
     await prefs.setString(
         'dailyReminderTitle', localization.dailyReminderTitle);
@@ -66,9 +68,9 @@ class _LaunchPageState extends State<LaunchPage> {
         'dailyReminderDescription', localization.dailyReminderDescription);
   }
 
-  _checkDatabaseConnection() async {
+  Future<void> _checkDatabaseConnection() async {
     // Prompt unlock before initializing database
-    if (await ConfigProvider.instance.get(ConfigKey.requirePassword)) {
+    if (ConfigProvider.instance.get(ConfigKey.requirePassword)) {
       await showDialog(
           context: context,
           builder: (context) => AuthPopup(
@@ -91,12 +93,13 @@ class _LaunchPageState extends State<LaunchPage> {
       }
     }
 
+    if (!mounted) return;
     setState(() {
       isLoading = false;
     });
   }
 
-  _forceLocalDatabase() async {
+  Future<void> _forceLocalDatabase() async {
     await AppDatabase.instance.init(forceWithoutSync: true);
     await _nextPage();
   }

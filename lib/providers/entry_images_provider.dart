@@ -1,4 +1,5 @@
-import 'dart:async';
+import 'dart:collection';
+
 import 'package:daily_you/database/app_database.dart';
 import 'package:daily_you/database/entry_image_dao.dart';
 import 'package:daily_you/models/entry.dart';
@@ -10,11 +11,15 @@ class EntryImagesProvider with ChangeNotifier {
 
   EntryImagesProvider._init();
 
-  List<EntryImage> images = List.empty();
+  List<EntryImage> _images = [];
+  final Map<int, List<EntryImage>> _imagesByEntryId = {};
+
+  List<EntryImage> get images => UnmodifiableListView(_images);
 
   /// Load the provider's data from the app database
   Future<void> load() async {
-    images = await EntryImageDao.getAll();
+    _images = await EntryImageDao.getAll();
+    _rebuildIndex();
     notifyListeners();
   }
 
@@ -23,7 +28,8 @@ class EntryImagesProvider with ChangeNotifier {
   Future<void> add(EntryImage image, {skipUpdate = false}) async {
     // Insert the image into the database so that it has an ID
     final imageWithId = await EntryImageDao.add(image);
-    images.add(imageWithId);
+    _images.add(imageWithId);
+    _rebuildIndex();
     await AppDatabase.instance.updateExternalDatabase();
     if (!skipUpdate) {
       notifyListeners();
@@ -32,15 +38,17 @@ class EntryImagesProvider with ChangeNotifier {
 
   Future<void> remove(EntryImage image) async {
     await EntryImageDao.remove(image);
-    images.removeWhere((x) => x.id == image.id);
+    _images.removeWhere((x) => x.id == image.id);
+    _rebuildIndex();
     await AppDatabase.instance.updateExternalDatabase();
     notifyListeners();
   }
 
   Future<void> update(EntryImage image) async {
     await EntryImageDao.update(image);
-    final index = images.indexWhere((x) => x.id == image.id);
-    images[index] = image;
+    final index = _images.indexWhere((x) => x.id == image.id);
+    _images[index] = image;
+    _rebuildIndex();
     await AppDatabase.instance.updateExternalDatabase();
     notifyListeners();
   }
@@ -49,10 +57,45 @@ class EntryImagesProvider with ChangeNotifier {
   ///
   /// Images are sorted by image rank where the highest number is first.
   List<EntryImage> getForEntry(Entry entry) {
-    final imagesForEntry =
-        images.where((img) => img.entryId == entry.id!).toList();
-    // Reverse order such that the highest rank is the first in the list
-    imagesForEntry.sort((a, b) => b.imgRank.compareTo(a.imgRank));
-    return imagesForEntry;
+    final entryId = entry.id;
+    if (entryId == null) {
+      return const [];
+    }
+
+    return getForEntryId(entryId);
+  }
+
+  List<EntryImage> getForEntryId(int entryId) {
+    final imagesForEntry = _imagesByEntryId[entryId];
+    if (imagesForEntry == null) {
+      return const [];
+    }
+
+    return UnmodifiableListView(imagesForEntry);
+  }
+
+  EntryImage? getPrimaryForEntryId(int entryId) {
+    final imagesForEntry = _imagesByEntryId[entryId];
+    if (imagesForEntry == null || imagesForEntry.isEmpty) {
+      return null;
+    }
+
+    return imagesForEntry.first;
+  }
+
+  void _rebuildIndex() {
+    _imagesByEntryId.clear();
+    for (final image in _images) {
+      final entryId = image.entryId;
+      if (entryId == null) {
+        continue;
+      }
+
+      _imagesByEntryId.putIfAbsent(entryId, () => []).add(image);
+    }
+
+    for (final images in _imagesByEntryId.values) {
+      images.sort((a, b) => b.imgRank.compareTo(a.imgRank));
+    }
   }
 }

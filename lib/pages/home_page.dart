@@ -35,12 +35,9 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage>
     with AutomaticKeepAliveClientMixin {
-  String searchText = '';
-  bool sortOrderAsc = true;
   bool firstLoad = true;
   final ScrollController _scrollController = ScrollController();
   Entry? _rewindEntry;
-  List<Entry> _rewindCandidates = [];
 
   @override
   bool get wantKeepAlive => true;
@@ -89,7 +86,7 @@ class _HomePageState extends State<HomePage>
     if (intent != null) {
       Entry? todayEntry = EntriesProvider.instance.getEntryForToday();
       List<EntryImage> todayImages = todayEntry != null
-          ? EntryImagesProvider.instance.getForEntry(todayEntry)
+          ? EntryImagesProvider.instance.getForEntryId(todayEntry.id!)
           : [];
       bool openCamera = (intent is TakePhotoIntent) ? true : false;
       DeviceInfoService().launchIntent = null;
@@ -114,9 +111,10 @@ class _HomePageState extends State<HomePage>
               DateTime.now();
           Entry? entry = EntriesProvider.instance.getEntryForDate(targetDate);
           List<EntryImage> entryImages = entry != null
-              ? EntryImagesProvider.instance.getForEntry(entry)
+              ? EntryImagesProvider.instance.getForEntryId(entry.id!)
               : [];
 
+          if (!mounted) return;
           await Navigator.of(context).push(
             MaterialPageRoute(
               allowSnapshotting: false,
@@ -143,8 +141,9 @@ class _HomePageState extends State<HomePage>
     final entryImagesProvider = Provider.of<EntryImagesProvider>(context);
 
     Entry? todayEntry = entriesProvider.getEntryForToday();
-    List<EntryImage> todayImages =
-        todayEntry != null ? entryImagesProvider.getForEntry(todayEntry) : [];
+    List<EntryImage> todayImages = todayEntry != null
+        ? entryImagesProvider.getForEntryId(todayEntry.id!)
+        : [];
 
     List<Flashback> flashbacks = FlashbackManager.getFlashbacks(
       context,
@@ -333,10 +332,16 @@ class _HomePageState extends State<HomePage>
   ) {
     final entriesProvider = Provider.of<EntriesProvider>(context);
     final entryImagesProvider = Provider.of<EntryImagesProvider>(context);
+    final rewindCandidates = _getRewindCandidates(entriesProvider);
+    final rewindEntry = _resolveRewindEntry(entriesProvider, rewindCandidates);
 
-    _syncRewindEntries(entriesProvider);
-    final rewindCard =
-        _buildRewindCard(context, entriesProvider, entryImagesProvider);
+    final rewindCard = _buildRewindCard(
+      context,
+      entriesProvider,
+      entryImagesProvider,
+      rewindCandidates: rewindCandidates,
+      rewindEntry: rewindEntry,
+    );
     final emptyState = entriesProvider.entries.isEmpty
         ? _buildCalendarEmptyState(context)
         : null;
@@ -417,18 +422,14 @@ class _HomePageState extends State<HomePage>
                             ? LargeEntryCardWidget(
                                 title: flashback.title,
                                 entry: flashback.entry,
-                                images:
-                                    EntryImagesProvider.instance.getForEntry(
-                                  flashback.entry,
-                                ),
+                                images: EntryImagesProvider.instance
+                                    .getForEntryId(flashback.entry.id!),
                               )
                             : EntryCardWidget(
                                 title: flashback.title,
                                 entry: flashback.entry,
-                                images:
-                                    EntryImagesProvider.instance.getForEntry(
-                                  flashback.entry,
-                                ),
+                                images: EntryImagesProvider.instance
+                                    .getForEntryId(flashback.entry.id!),
                               ),
                       ),
                     );
@@ -462,31 +463,36 @@ class _HomePageState extends State<HomePage>
     );
   }
 
-  void _syncRewindEntries(EntriesProvider entriesProvider) {
+  List<Entry> _getRewindCandidates(EntriesProvider entriesProvider) {
     final now = DateTime.now();
-    final candidates =
-        entriesProvider.getLocalEntriesForDayOfYear(now.month, now.day);
-
-    _rewindCandidates = candidates;
-    if (_rewindEntry == null ||
-        !candidates.any((entry) => entry.id == _rewindEntry!.id)) {
-      _rewindEntry = candidates.isNotEmpty
-          ? entriesProvider.pickRandomEntry(candidates)
-          : null;
-    }
+    return entriesProvider.getLocalEntriesForDayOfYear(now.month, now.day);
   }
 
-  Widget? _buildRewindCard(
-    BuildContext context,
+  Entry? _resolveRewindEntry(
     EntriesProvider entriesProvider,
-    EntryImagesProvider entryImagesProvider,
+    List<Entry> rewindCandidates,
   ) {
-    final rewindEntry = _rewindEntry;
+    final currentRewindEntry = _rewindEntry;
+    if (currentRewindEntry != null &&
+        rewindCandidates.any((entry) => entry.id == currentRewindEntry.id)) {
+      return currentRewindEntry;
+    }
+
+    if (rewindCandidates.isEmpty) {
+      return null;
+    }
+
+    return entriesProvider.pickRandomEntry(rewindCandidates);
+  }
+
+  Widget? _buildRewindCard(BuildContext context,
+      EntriesProvider entriesProvider, EntryImagesProvider entryImagesProvider,
+      {required List<Entry> rewindCandidates, required Entry? rewindEntry}) {
     if (rewindEntry == null) return null;
 
     return RewindCard(
       entry: rewindEntry,
-      images: entryImagesProvider.getForEntry(rewindEntry),
+      images: entryImagesProvider.getForEntryId(rewindEntry.id!),
       onOpen: () async {
         await Navigator.of(context).push(
           MaterialPageRoute(
@@ -499,11 +505,11 @@ class _HomePageState extends State<HomePage>
         );
       },
       onShowAnother: () {
-        if (_rewindCandidates.isEmpty) return;
+        if (rewindCandidates.isEmpty) return;
         setState(() {
           _rewindEntry = entriesProvider.pickRandomEntry(
-            _rewindCandidates,
-            excludeId: _rewindEntry?.id,
+            rewindCandidates,
+            excludeId: rewindEntry.id,
           );
         });
       },

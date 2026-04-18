@@ -25,6 +25,8 @@ class ExportUtils {
   static Future<bool> exportToMarkdown(
       BuildContext context, Function(String) updateStatus) async {
     updateStatus("(1/2) 0%");
+    final l10n = AppLocalizations.of(context)!;
+    final locale = TimeManager.currentLocale(context);
 
     String? exportFolder;
     try {
@@ -58,7 +60,7 @@ class ExportUtils {
         for (EntryImage image in images) {
           final bytes = await ImageStorage.instance.getBytes(image.imgPath);
           final prettyName =
-              "image_${DateFormat("yyyy-MM-dd", TimeManager.currentLocale(context)).format(entry.timeCreate)}_${image.imgRank}${extension(image.imgPath)}";
+              "image_${DateFormat("yyyy-MM-dd", locale).format(entry.timeCreate)}_${image.imgRank}${extension(image.imgPath)}";
           if (bytes != null) {
             noteBody.writeln('![](Images/$prettyName)');
 
@@ -73,11 +75,11 @@ class ExportUtils {
           moodText = "${MoodIcon.getMoodIcon(entry.mood)} ";
         }
         noteBody.writeln(
-            "$moodText${DateFormat.yMMMEd(TimeManager.currentLocale(context)).format(entry.timeCreate)}\n${entry.text}");
+            "$moodText${DateFormat.yMMMEd(locale).format(entry.timeCreate)}\n${entry.text}");
 
-        final timestamp =
-            DateFormat("yyyy-MM-dd", TimeManager.currentLocale(context))
-                .format(entry.timeCreate);
+        final timestamp = DateFormat("yyyy-MM-dd", locale).format(
+          entry.timeCreate,
+        );
         await FileLayer.createFile(tempExportFolder.path, "log_$timestamp.md",
             utf8.encode(noteBody.toString()),
             useExternalPath: false);
@@ -94,12 +96,11 @@ class ExportUtils {
       });
 
       // Save archive
-      updateStatus(AppLocalizations.of(context)!.tranferStatus("0"));
+      updateStatus(l10n.tranferStatus("0"));
       await FileLayer.copyToExternalLocation(
           join(tempDir.path, exportedZipName), exportFolder, exportedZipName,
           onProgress: (percent) {
-        updateStatus(
-            AppLocalizations.of(context)!.tranferStatus("${percent.round()}"));
+        updateStatus(l10n.tranferStatus("${percent.round()}"));
       });
     } catch (e) {
       updateStatus("$e");
@@ -108,7 +109,7 @@ class ExportUtils {
     }
 
     // Delete temp files
-    updateStatus(AppLocalizations.of(context)!.cleanUpStatus);
+    updateStatus(l10n.cleanUpStatus);
     await File(join(tempDir.path, exportedZipName)).delete();
     if (await tempExportFolder.exists()) {
       await tempExportFolder.delete(recursive: true);

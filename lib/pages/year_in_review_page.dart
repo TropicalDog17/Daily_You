@@ -163,11 +163,9 @@ class _YearInReviewPageState extends State<YearInReviewPage> {
       ..sort((a, b) => b.compareTo(a));
 
     final suggestedYear = DateTime.now().year - 1;
-    if (_selectedYear == null) {
-      _selectedYear = allYears.contains(suggestedYear)
-          ? suggestedYear
-          : (allYears.isNotEmpty ? allYears.first : null);
-    }
+    _selectedYear ??= allYears.contains(suggestedYear)
+        ? suggestedYear
+        : (allYears.isNotEmpty ? allYears.first : null);
 
     final selectedYear = _selectedYear;
     final yearEntries = selectedYear == null

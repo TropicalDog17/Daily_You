@@ -23,6 +23,7 @@ class _EntryMoodPickerState extends State<EntryMoodPicker> {
 
   Widget moodOption(int index) {
     return GestureDetector(
+      onTap: () => updateMood(index),
       child: Column(
         children: [
           PunchScale(
@@ -32,16 +33,13 @@ class _EntryMoodPickerState extends State<EntryMoodPicker> {
           ),
           SizedBox(
             height: 24,
-            child: Radio(
+            child: Radio<int>(
               value: index,
-              groupValue: _mood,
-              onChanged: updateMood,
               toggleable: true,
             ),
           ),
         ],
       ),
-      onTap: () => updateMood(index),
     );
   }
 
@@ -62,25 +60,29 @@ class _EntryMoodPickerState extends State<EntryMoodPicker> {
       color: Theme.of(context).colorScheme.surfaceContainer,
       child: Padding(
         padding: const EdgeInsets.only(bottom: 8.0),
-        child: Column(children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: widget.actions,
-          ),
-          const SizedBox(
-            height: 4,
-          ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        child: RadioGroup<int>(
+          groupValue: _mood,
+          onChanged: updateMood,
+          child: Column(
             children: [
-              moodOption(-2),
-              moodOption(-1),
-              moodOption(0),
-              moodOption(1),
-              moodOption(2),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: widget.actions,
+              ),
+              const SizedBox(height: 4),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  moodOption(-2),
+                  moodOption(-1),
+                  moodOption(0),
+                  moodOption(1),
+                  moodOption(2),
+                ],
+              ),
             ],
           ),
-        ]),
+        ),
       ),
     );
   }

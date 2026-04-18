@@ -19,11 +19,6 @@ class AppearanceSettings extends StatefulWidget {
 }
 
 class _AppearanceSettingsPageState extends State<AppearanceSettings> {
-  @override
-  void initState() {
-    super.initState();
-  }
-
   void _showAccentColorPopup(ThemeModeProvider themeProvider) {
     Color accentColor =
         Color(ConfigProvider.instance.get(ConfigKey.accentColor));
@@ -34,13 +29,13 @@ class _AppearanceSettingsPageState extends State<AppearanceSettings> {
           actions: [
             TextButton(
               child: Text(MaterialLocalizations.of(context).cancelButtonLabel),
-              onPressed: () async {
+              onPressed: () {
                 Navigator.pop(context);
               },
             ),
             TextButton(
               child: Text(MaterialLocalizations.of(context).okButtonLabel),
-              onPressed: () async {
+              onPressed: () {
                 themeProvider.accentColor = accentColor;
                 themeProvider.updateAccentColor();
                 Navigator.pop(context);
@@ -81,13 +76,14 @@ class _AppearanceSettingsPageState extends State<AppearanceSettings> {
           actions: [
             TextButton(
               child: Text(MaterialLocalizations.of(context).cancelButtonLabel),
-              onPressed: () async {
+              onPressed: () {
                 Navigator.pop(context);
               },
             ),
             TextButton(
               child: Text(MaterialLocalizations.of(context).okButtonLabel),
               onPressed: () async {
+                final navigator = Navigator.of(context);
                 if (newEmoji.isNotEmpty) {
                   if (value != null) {
                     await ConfigProvider.instance.set(
@@ -97,7 +93,8 @@ class _AppearanceSettingsPageState extends State<AppearanceSettings> {
                         .set(ConfigKey.noMoodIcon, newEmoji);
                   }
                 }
-                Navigator.pop(context);
+                if (!navigator.mounted) return;
+                navigator.pop();
               },
             ),
           ],

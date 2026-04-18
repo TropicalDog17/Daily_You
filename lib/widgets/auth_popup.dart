@@ -77,6 +77,7 @@ class _AuthPopupState extends State<AuthPopup> {
 
   Future<bool> authenticateWithBiometrics() async {
     final auth = LocalAuthentication();
+    final localizedReason = AppLocalizations.of(context)!.unlockAppPrompt;
     final canCheck = await auth.canCheckBiometrics;
     if (!canCheck) return false;
 
@@ -85,7 +86,7 @@ class _AuthPopupState extends State<AuthPopup> {
       final bool didAuthenticate = await auth.authenticate(
           options:
               AuthenticationOptions(stickyAuth: false, biometricOnly: true),
-          localizedReason: AppLocalizations.of(context)!.unlockAppPrompt);
+          localizedReason: localizedReason);
       success = didAuthenticate;
     } on PlatformException {
       success = false;
@@ -98,17 +99,18 @@ class _AuthPopupState extends State<AuthPopup> {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
+    final l10n = AppLocalizations.of(context)!;
 
     try {
       switch (widget.mode) {
         case AuthPopupMode.unlock:
           final valid = await validatePassword(_passwordController.text);
+          if (!mounted) return;
           if (valid) {
             widget.onSuccess?.call();
             Navigator.of(context).pop();
           } else {
-            setState(() => _error = AppLocalizations.of(context)!
-                .settingsSecurityIncorrectPassword);
+            setState(() => _error = l10n.settingsSecurityIncorrectPassword);
           }
           break;
 
@@ -119,34 +121,38 @@ class _AuthPopupState extends State<AuthPopup> {
             break;
           }
           await savePassword(_passwordController.text);
+          if (!mounted) return;
           widget.onSuccess?.call();
           Navigator.of(context).pop();
           break;
 
         case AuthPopupMode.changePassword:
           final validOld = await validatePassword(_oldController.text);
+          if (!mounted) return;
           if (!validOld) {
-            setState(() => _error = AppLocalizations.of(context)!
-                .settingsSecurityIncorrectPassword);
+            setState(() => _error = l10n.settingsSecurityIncorrectPassword);
             break;
           }
           if (_passwordController.text != _confirmController.text) {
-            setState(() => _error = AppLocalizations.of(context)!
-                .settingsSecurityPasswordsDoNotMatch);
+            setState(() => _error = l10n.settingsSecurityPasswordsDoNotMatch);
             break;
           }
           await savePassword(_passwordController.text);
+          if (!mounted) return;
           widget.onSuccess?.call();
           Navigator.of(context).pop();
           break;
       }
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
-  void _handleBiometric() async {
+  Future<void> _handleBiometric() async {
     final ok = await authenticateWithBiometrics();
+    if (!mounted) return;
     if (ok) {
       widget.onSuccess?.call();
       Navigator.of(context).pop();

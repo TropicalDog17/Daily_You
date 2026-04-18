@@ -58,6 +58,7 @@ class _EditTemplateState extends State<EditTemplate> {
           text: templateText,
           timeModified: DateTime.now()));
     }
+    if (!mounted) return;
     Navigator.of(context).pop();
   }
 

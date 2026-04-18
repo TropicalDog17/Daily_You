@@ -350,6 +350,7 @@ class ImportUtils {
   static Future<bool> importFromDiarium(
       BuildContext context, Function(String) updateStatus) async {
     updateStatus("0%");
+    final l10n = AppLocalizations.of(context)!;
 
     var tempDir = await getTemporaryDirectory();
     final tempDbName = "temp_diarium.db";
@@ -361,11 +362,10 @@ class ImportUtils {
       if (dbPath == null) return false;
 
       // Transfer DB to local storage
-      updateStatus(AppLocalizations.of(context)!.tranferStatus("0"));
+      updateStatus(l10n.tranferStatus("0"));
       await FileLayer.copyFromExternalLocation(dbPath, tempDir.path, tempDbName,
           onProgress: (percent) {
-        updateStatus(
-            AppLocalizations.of(context)!.tranferStatus("${percent.round()}"));
+        updateStatus(l10n.tranferStatus("${percent.round()}"));
       });
 
       db = await openDatabase(join(tempDir.path, tempDbName), readOnly: true);
@@ -497,7 +497,7 @@ class ImportUtils {
       success = false;
     }
 
-    updateStatus(AppLocalizations.of(context)!.cleanUpStatus);
+    updateStatus(l10n.cleanUpStatus);
 
     await EntriesProvider.instance.load();
     await EntryImagesProvider.instance.load();
@@ -518,6 +518,7 @@ class ImportUtils {
   static Future<bool> importFromDaylio(
       BuildContext context, Function(String) updateStatus) async {
     updateStatus("0%");
+    final l10n = AppLocalizations.of(context)!;
 
     final selectedFile = await FileLayer.pickFile();
     if (selectedFile == null) return false;
@@ -531,11 +532,10 @@ class ImportUtils {
 
     try {
       // Import archive
-      updateStatus(AppLocalizations.of(context)!.tranferStatus("0"));
+      updateStatus(l10n.tranferStatus("0"));
       await FileLayer.copyFromExternalLocation(
           selectedFile, tempDir.path, tempDaylioZip, onProgress: (percent) {
-        updateStatus(
-            AppLocalizations.of(context)!.tranferStatus("${percent.round()}"));
+        updateStatus(l10n.tranferStatus("${percent.round()}"));
       });
 
       await ZipUtils.extract(
@@ -686,7 +686,7 @@ class ImportUtils {
       success = false;
     }
 
-    updateStatus(AppLocalizations.of(context)!.cleanUpStatus);
+    updateStatus(l10n.cleanUpStatus);
 
     await EntriesProvider.instance.load();
     await EntryImagesProvider.instance.load();
@@ -724,6 +724,7 @@ class ImportUtils {
   static Future<bool> importFromDiaro(
       BuildContext context, Function(String) updateStatus) async {
     updateStatus("0%");
+    final l10n = AppLocalizations.of(context)!;
 
     final selectedFile = await FileLayer.pickFile();
     if (selectedFile == null) return false;
@@ -737,11 +738,10 @@ class ImportUtils {
 
     try {
       // Import archive
-      updateStatus(AppLocalizations.of(context)!.tranferStatus("0"));
+      updateStatus(l10n.tranferStatus("0"));
       await FileLayer.copyFromExternalLocation(
           selectedFile, tempDir.path, tempZip, onProgress: (percent) {
-        updateStatus(
-            AppLocalizations.of(context)!.tranferStatus("${percent.round()}"));
+        updateStatus(l10n.tranferStatus("${percent.round()}"));
       });
 
       await ZipUtils.extract(
@@ -934,7 +934,7 @@ class ImportUtils {
       success = false;
     }
 
-    updateStatus(AppLocalizations.of(context)!.cleanUpStatus);
+    updateStatus(l10n.cleanUpStatus);
 
     await EntriesProvider.instance.load();
     await EntryImagesProvider.instance.load();
@@ -973,6 +973,7 @@ class ImportUtils {
   static Future<bool> importFromDaybook(
       BuildContext context, Function(String) updateStatus) async {
     updateStatus("0%");
+    final l10n = AppLocalizations.of(context)!;
 
     final selectedFile = await FileLayer.pickFile();
     if (selectedFile == null) return false;
@@ -986,15 +987,13 @@ class ImportUtils {
 
     try {
       // --- Copy ZIP ---
-      updateStatus(AppLocalizations.of(context)!.tranferStatus("0"));
+      updateStatus(l10n.tranferStatus("0"));
       await FileLayer.copyFromExternalLocation(
         selectedFile,
         tempDir.path,
         tempZip,
         onProgress: (percent) {
-          updateStatus(
-            AppLocalizations.of(context)!.tranferStatus("${percent.round()}"),
-          );
+          updateStatus(l10n.tranferStatus("${percent.round()}"));
         },
       );
 
@@ -1158,7 +1157,7 @@ class ImportUtils {
       success = false;
     }
 
-    updateStatus(AppLocalizations.of(context)!.cleanUpStatus);
+    updateStatus(l10n.cleanUpStatus);
 
     await EntriesProvider.instance.load();
     await EntryImagesProvider.instance.load();

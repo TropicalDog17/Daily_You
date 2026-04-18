@@ -13,11 +13,6 @@ class BackupRestoreSettings extends StatefulWidget {
 }
 
 class _BackupRestoreSettingsState extends State<BackupRestoreSettings> {
-  @override
-  void initState() {
-    super.initState();
-  }
-
   Future<void> _showImportSelectionPopup() async {
     ImportFormat chosenFormat = ImportFormat.none;
     await showDialog(
@@ -85,6 +80,8 @@ class _BackupRestoreSettingsState extends State<BackupRestoreSettings> {
       },
     );
 
+    if (!mounted) return;
+
     if (chosenFormat != ImportFormat.none) {
       ValueNotifier<String> statusNotifier = ValueNotifier<String>("");
 
@@ -124,6 +121,7 @@ class _BackupRestoreSettingsState extends State<BackupRestoreSettings> {
         });
       }
 
+      if (!mounted) return;
       Navigator.of(context).pop();
     }
   }
@@ -154,6 +152,8 @@ class _BackupRestoreSettingsState extends State<BackupRestoreSettings> {
       },
     );
 
+    if (!mounted) return;
+
     if (chosenFormat != ExportFormat.none) {
       ValueNotifier<String> statusNotifier = ValueNotifier<String>("");
 
@@ -165,6 +165,7 @@ class _BackupRestoreSettingsState extends State<BackupRestoreSettings> {
         });
       }
 
+      if (!mounted) return;
       Navigator.of(context).pop();
     }
   }
@@ -178,6 +179,7 @@ class _BackupRestoreSettingsState extends State<BackupRestoreSettings> {
       statusNotifier.value = status;
     });
 
+    if (!context.mounted) return;
     Navigator.of(context).pop();
 
     if (!success) {
@@ -210,6 +212,7 @@ class _BackupRestoreSettingsState extends State<BackupRestoreSettings> {
       statusNotifier.value = status;
     });
 
+    if (!context.mounted) return;
     Navigator.of(context).pop();
 
     if (!success) {
@@ -260,6 +263,8 @@ class _BackupRestoreSettingsState extends State<BackupRestoreSettings> {
         );
       },
     );
+
+    if (!mounted) return;
     if (confirmed) {
       await _restoreData(context);
     }

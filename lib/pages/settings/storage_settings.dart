@@ -20,11 +20,6 @@ class StorageSettings extends StatefulWidget {
 }
 
 class _StorageSettingsState extends State<StorageSettings> {
-  @override
-  void initState() {
-    super.initState();
-  }
-
   Future<bool> requestStoragePermission() async {
     DeviceInfoPlugin deviceInfoPlugin = DeviceInfoPlugin();
     AndroidDeviceInfo androidInfo = await deviceInfoPlugin.androidInfo;
@@ -90,6 +85,9 @@ class _StorageSettingsState extends State<StorageSettings> {
         );
       },
     );
+
+    if (!mounted) return;
+
     if (confirmed) {
       ValueNotifier<String> statusNotifier = ValueNotifier<String>("");
 
@@ -99,6 +97,7 @@ class _StorageSettingsState extends State<StorageSettings> {
         statusNotifier.value = status;
       });
 
+      if (!mounted) return;
       Navigator.of(context).pop();
 
       if (!locationSet) {
@@ -132,6 +131,7 @@ class _StorageSettingsState extends State<StorageSettings> {
       statusNotifier.value = status;
     });
 
+    if (!mounted) return;
     Navigator.of(context).pop();
 
     if (!locationSet) {
@@ -237,6 +237,7 @@ class _StorageSettingsState extends State<StorageSettings> {
       statusNotifier.value = status;
     });
 
+    if (!context.mounted) return;
     Navigator.of(context).pop();
   }
 

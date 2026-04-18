@@ -1,11 +1,11 @@
 import 'package:daily_you/config_provider.dart';
 import 'package:daily_you/models/entry.dart';
 import 'package:daily_you/models/image.dart';
+import 'package:daily_you/pages/edit_entry_page.dart';
+import 'package:daily_you/pages/entry_detail_page.dart';
 import 'package:daily_you/providers/entries_provider.dart';
 import 'package:daily_you/providers/entry_images_provider.dart';
 import 'package:daily_you/time_manager.dart';
-import 'package:daily_you/pages/edit_entry_page.dart';
-import 'package:daily_you/pages/entry_detail_page.dart';
 import 'package:daily_you/widgets/local_image_loader.dart';
 import 'package:daily_you/widgets/mood_icon.dart';
 import 'package:flutter/material.dart';
@@ -24,61 +24,64 @@ class IosDayCell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final entriesProvider = Provider.of<EntriesProvider>(context);
-    final entryImagesProvider = Provider.of<EntryImagesProvider>(context);
-    final configProvider = Provider.of<ConfigProvider>(context);
+    final entry = context.select<EntriesProvider, Entry?>(
+      (provider) => provider.getEntryForDate(date),
+    );
+    final entryId = entry?.id;
+    final image = entryId == null
+        ? null
+        : context.select<EntryImagesProvider, EntryImage?>(
+            (provider) => provider.getPrimaryForEntryId(entryId),
+          );
+    final showMood = context.select<ConfigProvider, bool>(
+      (provider) => provider.get(ConfigKey.calendarViewMode) == 'mood',
+    );
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    final Entry? entry = entriesProvider.getEntryForDate(date);
-    EntryImage? image;
-    if (entry != null) {
-      image = entryImagesProvider.getForEntry(entry).firstOrNull;
-    }
+    final isToday = TimeManager.isToday(date);
+    final hasImage = entry != null && image != null && !showMood;
 
-    final bool isToday = TimeManager.isToday(date);
-    final bool showMood =
-        configProvider.get(ConfigKey.calendarViewMode) == 'mood';
-    final bool hasImage = entry != null && image != null && !showMood;
-
-    final String dayAbbrev = DateFormat(
-      "EEE",
+    final dayAbbrev = DateFormat(
+      'EEE',
       TimeManager.currentLocale(context),
     ).format(date).toUpperCase();
 
-    final Color cellBg = colorScheme.surfaceContainerHighest;
-    final Color imageFallbackBg = colorScheme.scrim;
-    final Color todayRingColor = colorScheme.primary;
-    final Color futureLabelColor =
-        colorScheme.onSurface.withValues(alpha: 0.38);
-    final Color futureNumberColor =
-        colorScheme.onSurface.withValues(alpha: 0.24);
-    final Color imageLabelColor = colorScheme.onPrimary.withValues(alpha: 0.78);
-    final Color imageNumberColor = colorScheme.onPrimary;
-    final Color normalLabelColor = colorScheme.onSurfaceVariant;
-    final Color normalNumberColor = colorScheme.onSurface;
-    final Color mediaIndicatorColor = hasImage
+    final cellBg = colorScheme.surfaceContainerHighest;
+    final imageFallbackBg = colorScheme.scrim;
+    final todayRingColor = colorScheme.primary;
+    final futureLabelColor = colorScheme.onSurface.withValues(alpha: 0.38);
+    final futureNumberColor = colorScheme.onSurface.withValues(alpha: 0.24);
+    final imageLabelColor = colorScheme.onPrimary.withValues(alpha: 0.78);
+    final imageNumberColor = colorScheme.onPrimary;
+    final normalLabelColor = colorScheme.onSurfaceVariant;
+    final normalNumberColor = colorScheme.onSurface;
+    final mediaIndicatorColor = hasImage
         ? colorScheme.onPrimary.withValues(alpha: 0.72)
         : colorScheme.onSurfaceVariant.withValues(alpha: 0.78);
 
     Future<void> handleTap() async {
-      entriesProvider.setSelectedDate(date);
+      final entriesProvider = context.read<EntriesProvider>();
       if (entry != null) {
-        await Navigator.of(context).push(MaterialPageRoute(
-          builder: (context) => EntryDetailPage(
-            filtered: false,
-            index: entriesProvider.getIndexOfEntry(entry.id!),
+        await Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => EntryDetailPage(
+              filtered: false,
+              index: entriesProvider.getIndexOfEntry(entry.id!),
+            ),
           ),
-        ));
+        );
         return;
       }
 
-      await Navigator.of(context).push(MaterialPageRoute(
-        builder: (context) => AddEditEntryPage(
-          overrideCreateDate: TimeManager.currentTimeOnDifferentDate(date)
-              .copyWith(isUtc: false),
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => AddEditEntryPage(
+            overrideCreateDate: TimeManager.currentTimeOnDifferentDate(date)
+                .copyWith(isUtc: false),
+          ),
         ),
-      ));
+      );
     }
 
     return GestureDetector(
@@ -89,14 +92,12 @@ class IosDayCell extends StatelessWidget {
         decoration: BoxDecoration(
           color: hasImage ? imageFallbackBg : cellBg,
           borderRadius: BorderRadius.circular(14),
-          border:
-              isToday ? Border.all(color: todayRingColor, width: 2.0) : null,
+          border: isToday ? Border.all(color: todayRingColor, width: 2) : null,
         ),
         clipBehavior: Clip.antiAlias,
         child: Stack(
           fit: StackFit.expand,
           children: [
-            // Background image
             if (image != null)
               Positioned.fill(
                 child: AnimatedOpacity(
@@ -109,13 +110,11 @@ class IosDayCell extends StatelessWidget {
                   ),
                 ),
               ),
-            // Text content
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Day abbreviation
                   Text(
                     dayAbbrev,
                     style: TextStyle(
@@ -126,11 +125,12 @@ class IosDayCell extends StatelessWidget {
                           ? futureLabelColor
                           : isToday
                               ? todayRingColor
-                              : (hasImage ? imageLabelColor : normalLabelColor),
+                              : hasImage
+                                  ? imageLabelColor
+                                  : normalLabelColor,
                     ),
                   ),
                   const SizedBox(height: 1),
-                  // Day number
                   Text(
                     '${date.day}',
                     style: TextStyle(
@@ -139,15 +139,14 @@ class IosDayCell extends StatelessWidget {
                       height: 1.1,
                       color: isFuture
                           ? futureNumberColor
-                          : (isToday
+                          : isToday
                               ? todayRingColor
-                              : (hasImage
+                              : hasImage
                                   ? imageNumberColor
-                                  : normalNumberColor)),
+                                  : normalNumberColor,
                     ),
                   ),
                   const Spacer(),
-                  // Content indicator at bottom right
                   if (entry != null && !isFuture)
                     Align(
                       alignment: Alignment.bottomRight,

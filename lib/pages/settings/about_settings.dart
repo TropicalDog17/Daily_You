@@ -19,11 +19,6 @@ class _AboutSettingsState extends State<AboutSettings> {
   int versionTapCount = 0;
 
   @override
-  void initState() {
-    super.initState();
-  }
-
-  @override
   Widget build(BuildContext context) {
     final configProvider = Provider.of<ConfigProvider>(context);
     final themeProvider = Provider.of<ThemeModeProvider>(context);
@@ -83,6 +78,7 @@ class _AboutSettingsState extends State<AboutSettings> {
                 themeProvider.accentColor = pinkAccentColor;
                 themeProvider.updateAccentColor();
 
+                if (!context.mounted) return;
                 await showDialog(
                   context: context,
                   builder: (BuildContext context) {

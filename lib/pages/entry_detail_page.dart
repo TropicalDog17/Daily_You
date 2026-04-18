@@ -23,11 +23,13 @@ import 'package:daily_you/widgets/video_player_widget.dart';
 class EntryDetailPage extends StatefulWidget {
   final int index;
   final bool filtered;
+  final GalleryFilters galleryFilters;
 
   const EntryDetailPage({
     super.key,
     required this.index,
     required this.filtered,
+    this.galleryFilters = const GalleryFilters(),
   });
 
   @override
@@ -58,8 +60,12 @@ class _EntryDetailPageState extends State<EntryDetailPage> {
     final entriesProvider = Provider.of<EntriesProvider>(context);
 
     var entries = widget.filtered
-        ? entriesProvider.getFilteredEntries()
+        ? entriesProvider.getFilteredEntries(filters: widget.galleryFilters)
         : entriesProvider.entries;
+
+    if (entries.isEmpty) {
+      return Scaffold(appBar: AppBar());
+    }
 
     // When entries are deleted the current index may be too large
     if (_currentPageNotifier.value >= entries.length) {
@@ -94,7 +100,9 @@ class _EntryDetailPageState extends State<EntryDetailPage> {
         final entryImagesProvider = Provider.of<EntryImagesProvider>(context);
 
         var entry = entries[currentIndex];
-        var images = entryImagesProvider.getForEntry(entry);
+        var images = entry.id == null
+            ? const <EntryImage>[]
+            : entryImagesProvider.getForEntryId(entry.id!);
 
         return IconButton(
           icon: const Icon(Icons.edit_rounded),
@@ -117,7 +125,9 @@ class _EntryDetailPageState extends State<EntryDetailPage> {
             // Get the new list of entries since the date of the edited entry
             // may have changed.
             var updatedEntries = widget.filtered
-                ? entriesProvider.getFilteredEntries()
+                ? entriesProvider.getFilteredEntries(
+                    filters: widget.galleryFilters,
+                  )
                 : entriesProvider.entries;
 
             // Find new index of the same entry by ID
@@ -143,7 +153,9 @@ class _EntryDetailPageState extends State<EntryDetailPage> {
         final entryImagesProvider = Provider.of<EntryImagesProvider>(context);
 
         var entry = entries[currentIndex];
-        var images = entryImagesProvider.getForEntry(entry);
+        var images = entry.id == null
+            ? const <EntryImage>[]
+            : entryImagesProvider.getForEntryId(entry.id!);
 
         if ((Platform.isAndroid || Platform.isIOS) &&
             (images.isNotEmpty || entry.text.isNotEmpty)) {
@@ -204,7 +216,9 @@ class EntryDetails extends StatelessWidget {
     final entryImagesProvider = Provider.of<EntryImagesProvider>(context);
 
     var entry = entries[index];
-    var images = entryImagesProvider.getForEntry(entry);
+    var images = entry.id == null
+        ? const <EntryImage>[]
+        : entryImagesProvider.getForEntryId(entry.id!);
 
     return Center(
       child: Container(
@@ -222,27 +236,6 @@ class EntryDetails extends StatelessWidget {
                   child: images.first.mediaType == 'video'
                       ? VideoPlayerWidget(media: images.first)
                       : GestureDetector(
-                          child: Card.filled(
-                            clipBehavior: Clip.antiAlias,
-                            child: Stack(
-                              fit: StackFit.expand,
-                              children: [
-                                LocalImageLoader(
-                                    imagePath: images.first.imgPath),
-                                if (images.first.mediaType == 'live_photo')
-                                  const Align(
-                                    alignment: Alignment.bottomRight,
-                                    child: Padding(
-                                      padding: EdgeInsets.all(8.0),
-                                      child: Icon(
-                                        Icons.motion_photos_on_rounded,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                  ),
-                              ],
-                            ),
-                          ),
                           onTap: () async {
                             await Navigator.of(context).push(
                               MaterialPageRoute(
@@ -269,6 +262,28 @@ class EntryDetails extends StatelessWidget {
                                   );
                                 }
                               : null,
+                          child: Card.filled(
+                            clipBehavior: Clip.antiAlias,
+                            child: Stack(
+                              fit: StackFit.expand,
+                              children: [
+                                LocalImageLoader(
+                                  imagePath: images.first.imgPath,
+                                ),
+                                if (images.first.mediaType == 'live_photo')
+                                  const Align(
+                                    alignment: Alignment.bottomRight,
+                                    child: Padding(
+                                      padding: EdgeInsets.all(8.0),
+                                      child: Icon(
+                                        Icons.motion_photos_on_rounded,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
                         ),
                 ),
               ),
@@ -371,40 +386,6 @@ class EntryDetails extends StatelessWidget {
                     (image) => SizedBox(
                       width: imageSize,
                       child: GestureDetector(
-                        child: Center(
-                          child: SizedBox(
-                            height: imageSize,
-                            width: imageSize,
-                            child: Card.filled(
-                              clipBehavior: Clip.antiAlias,
-                              child: Stack(
-                                fit: StackFit.expand,
-                                children: [
-                                  LocalImageLoader(imagePath: image.imgPath),
-                                  if (image.mediaType == 'video')
-                                    const Center(
-                                      child: Icon(
-                                        Icons.play_circle_fill_rounded,
-                                        color: Colors.white,
-                                        size: 36,
-                                      ),
-                                    ),
-                                  if (image.mediaType == 'live_photo')
-                                    const Align(
-                                      alignment: Alignment.bottomRight,
-                                      child: Padding(
-                                        padding: EdgeInsets.all(8.0),
-                                        child: Icon(
-                                          Icons.motion_photos_on_rounded,
-                                          color: Colors.white,
-                                        ),
-                                      ),
-                                    ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
                         onTap: () async {
                           if (image.mediaType == 'video') {
                             await showDialog(
@@ -450,6 +431,40 @@ class EntryDetails extends StatelessWidget {
                                 );
                               }
                             : null,
+                        child: Center(
+                          child: SizedBox(
+                            height: imageSize,
+                            width: imageSize,
+                            child: Card.filled(
+                              clipBehavior: Clip.antiAlias,
+                              child: Stack(
+                                fit: StackFit.expand,
+                                children: [
+                                  LocalImageLoader(imagePath: image.imgPath),
+                                  if (image.mediaType == 'video')
+                                    const Center(
+                                      child: Icon(
+                                        Icons.play_circle_fill_rounded,
+                                        color: Colors.white,
+                                        size: 36,
+                                      ),
+                                    ),
+                                  if (image.mediaType == 'live_photo')
+                                    const Align(
+                                      alignment: Alignment.bottomRight,
+                                      child: Padding(
+                                        padding: EdgeInsets.all(8.0),
+                                        child: Icon(
+                                          Icons.motion_photos_on_rounded,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
                       ),
                     ),
                   )
@@ -466,40 +481,6 @@ class EntryDetails extends StatelessWidget {
             itemCount: images.length,
             itemBuilder: (context, index) {
               return GestureDetector(
-                child: Center(
-                  child: SizedBox(
-                    height: imageSize,
-                    width: imageSize,
-                    child: Card.filled(
-                      clipBehavior: Clip.antiAlias,
-                      child: Stack(
-                        fit: StackFit.expand,
-                        children: [
-                          LocalImageLoader(imagePath: images[index].imgPath),
-                          if (images[index].mediaType == 'video')
-                            const Center(
-                              child: Icon(
-                                Icons.play_circle_fill_rounded,
-                                color: Colors.white,
-                                size: 36,
-                              ),
-                            ),
-                          if (images[index].mediaType == 'live_photo')
-                            const Align(
-                              alignment: Alignment.bottomRight,
-                              child: Padding(
-                                padding: EdgeInsets.all(8.0),
-                                child: Icon(
-                                  Icons.motion_photos_on_rounded,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
                 onTap: () async {
                   if (images[index].mediaType == 'video') {
                     await showDialog(
@@ -544,6 +525,40 @@ class EntryDetails extends StatelessWidget {
                         );
                       }
                     : null,
+                child: Center(
+                  child: SizedBox(
+                    height: imageSize,
+                    width: imageSize,
+                    child: Card.filled(
+                      clipBehavior: Clip.antiAlias,
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          LocalImageLoader(imagePath: images[index].imgPath),
+                          if (images[index].mediaType == 'video')
+                            const Center(
+                              child: Icon(
+                                Icons.play_circle_fill_rounded,
+                                color: Colors.white,
+                                size: 36,
+                              ),
+                            ),
+                          if (images[index].mediaType == 'live_photo')
+                            const Align(
+                              alignment: Alignment.bottomRight,
+                              child: Padding(
+                                padding: EdgeInsets.all(8.0),
+                                child: Icon(
+                                  Icons.motion_photos_on_rounded,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
               );
             },
           ),

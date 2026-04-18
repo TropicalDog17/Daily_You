@@ -12,6 +12,7 @@ import 'package:path_provider/path_provider.dart';
 class BackupRestoreUtils {
   static Future<bool> backupToZip(
       BuildContext context, void Function(String) updateStatus) async {
+    final l10n = AppLocalizations.of(context)!;
     String? savePath;
     try {
       savePath = await FileLayer.pickDirectory();
@@ -28,27 +29,25 @@ class BackupRestoreUtils {
         "daily_you_backup_${DateTime.now().toIso8601String().replaceAll(':', '-')}.zip";
 
     // Create archive
-    updateStatus(AppLocalizations.of(context)!.creatingBackupStatus("0"));
+    updateStatus(l10n.creatingBackupStatus("0"));
     await ZipUtils.compress(join(tempDir.path, exportedZipName), [
       await AppDatabase.instance.getInternalPath()
     ], [
       await ImageStorage.instance.getInternalFolder()
     ], onProgress: (percent) {
-      updateStatus(AppLocalizations.of(context)!
-          .creatingBackupStatus("${percent.round()}"));
+      updateStatus(l10n.creatingBackupStatus("${percent.round()}"));
     });
 
     // Save archive
-    updateStatus(AppLocalizations.of(context)!.tranferStatus("0"));
+    updateStatus(l10n.tranferStatus("0"));
     await FileLayer.copyToExternalLocation(
         join(tempDir.path, exportedZipName), savePath, exportedZipName,
         onProgress: (percent) {
-      updateStatus(
-          AppLocalizations.of(context)!.tranferStatus("${percent.round()}"));
+      updateStatus(l10n.tranferStatus("${percent.round()}"));
     });
 
     // Delete temp files
-    updateStatus(AppLocalizations.of(context)!.cleanUpStatus);
+    updateStatus(l10n.cleanUpStatus);
     await File(join(tempDir.path, exportedZipName)).delete();
 
     return true;
@@ -56,6 +55,7 @@ class BackupRestoreUtils {
 
   static Future<bool> restoreFromZip(
       BuildContext context, void Function(String) updateStatus) async {
+    final l10n = AppLocalizations.of(context)!;
     var importSuccessful = true;
 
     String? archive = await FileLayer.pickFile(
@@ -68,22 +68,20 @@ class BackupRestoreUtils {
     final tempZipName = "temp_backup.zip";
 
     // Import archive
-    updateStatus(AppLocalizations.of(context)!.tranferStatus("0"));
+    updateStatus(l10n.tranferStatus("0"));
     await FileLayer.copyFromExternalLocation(archive, tempDir.path, tempZipName,
         onProgress: (percent) {
-      updateStatus(
-          AppLocalizations.of(context)!.tranferStatus("${percent.round()}"));
+      updateStatus(l10n.tranferStatus("${percent.round()}"));
     });
 
     // Restore archive
-    updateStatus(AppLocalizations.of(context)!.restoringBackupStatus("0"));
+    updateStatus(l10n.restoringBackupStatus("0"));
     final restoreFolder = Directory(join(tempDir.path, "Restore"));
     await restoreFolder.create(recursive: true);
 
     await ZipUtils.extract(join(tempDir.path, tempZipName), restoreFolder.path,
         onProgress: (percent) {
-      updateStatus(AppLocalizations.of(context)!
-          .restoringBackupStatus("${percent.round()}"));
+      updateStatus(l10n.restoringBackupStatus("${percent.round()}"));
     });
 
     final tempDb = File(join(restoreFolder.path, 'daily_you.db'));
@@ -98,7 +96,7 @@ class BackupRestoreUtils {
       // Import images. These will be garbage collected after import
       if (await Directory(join(restoreFolder.path, "Images")).exists()) {
         // Also show cleanup status here since images may take awhile
-        updateStatus(AppLocalizations.of(context)!.cleanUpStatus);
+        updateStatus(l10n.cleanUpStatus);
         var files = Directory(join(restoreFolder.path, "Images")).list();
         final internalImagePath =
             await ImageStorage.instance.getInternalFolder();
@@ -117,7 +115,7 @@ class BackupRestoreUtils {
     }
 
     // Delete temp files
-    updateStatus(AppLocalizations.of(context)!.cleanUpStatus);
+    updateStatus(l10n.cleanUpStatus);
     await File(join(tempDir.path, tempZipName)).delete();
     if (await restoreFolder.exists()) {
       await restoreFolder.delete(recursive: true);

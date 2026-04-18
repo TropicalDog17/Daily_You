@@ -1,4 +1,4 @@
-import 'dart:async';
+import 'dart:collection';
 import 'dart:io';
 import 'dart:math';
 import 'package:daily_you/database/app_database.dart';
@@ -16,59 +16,49 @@ enum OrderBy { date, mood }
 
 enum SortOrder { ascending, descending }
 
+class GalleryFilters {
+  final String searchText;
+  final OrderBy orderBy;
+  final SortOrder sortOrder;
+
+  const GalleryFilters({
+    this.searchText = '',
+    this.orderBy = OrderBy.date,
+    this.sortOrder = SortOrder.descending,
+  });
+
+  GalleryFilters copyWith({
+    String? searchText,
+    OrderBy? orderBy,
+    SortOrder? sortOrder,
+  }) {
+    return GalleryFilters(
+      searchText: searchText ?? this.searchText,
+      orderBy: orderBy ?? this.orderBy,
+      sortOrder: sortOrder ?? this.sortOrder,
+    );
+  }
+}
+
 class EntriesProvider with ChangeNotifier {
   static final EntriesProvider instance = EntriesProvider._init();
 
   EntriesProvider._init();
 
-  List<Entry> entries = List.empty();
+  List<Entry> _entries = [];
+  List<Entry> get entries => UnmodifiableListView(_entries);
 
   Map<DateTime, Entry> _entriesByDay = {};
-
-  String _searchText = "";
-  String get searchText {
-    return _searchText;
-  }
 
   int _wordCount = 0;
   int get wordCount {
     return _wordCount;
   }
 
-  set searchText(String newSearchText) {
-    _searchText = newSearchText;
-    notifyListeners();
-  }
-
-  OrderBy _orderBy = OrderBy.date;
-  OrderBy get orderBy {
-    return _orderBy;
-  }
-
-  set orderBy(OrderBy newOrderBy) {
-    _orderBy = newOrderBy;
-    notifyListeners();
-  }
-
-  SortOrder _sortOrder = SortOrder.descending;
-  SortOrder get sortOrder {
-    return _sortOrder;
-  }
-
-  set sortOrder(SortOrder newSortOrder) {
-    _sortOrder = newSortOrder;
-    notifyListeners();
-  }
-
-  // Used for preserving calendar state
-  DateTime selectedDate = DateTime.now();
-
   /// Load the provider's data from the app database
   Future<void> load() async {
-    entries = await EntryDao.getAll();
-    _calculateWordCount();
-    _calculateEntriesByDay();
-    notifyListeners();
+    _entries = await EntryDao.getAll();
+    _refreshDerivedState();
   }
 
   // CRUD operations
@@ -76,47 +66,30 @@ class EntriesProvider with ChangeNotifier {
   Future<Entry> add(Entry entry, {skipUpdate = false}) async {
     // Insert the entry into the database so that it has an ID
     final entryWithId = await EntryDao.add(entry);
-    entries.add(entryWithId);
+    _entries.add(entryWithId);
     await AppDatabase.instance.updateExternalDatabase();
 
     if (!skipUpdate) {
-      // Reverse chronological order such that the most recent day is first
-      entries.sort((a, b) => compareDateOnly(b.timeCreate, a.timeCreate));
-
-      // Update stats
-      _calculateWordCount();
-      _calculateEntriesByDay();
-
-      notifyListeners();
+      _refreshDerivedState();
     }
     return entryWithId;
   }
 
   Future<void> update(Entry entry) async {
     await EntryDao.update(entry);
-    final index = entries.indexWhere((x) => x.id == entry.id);
-    entries[index] = entry;
-    // Reverse chronological order such that the most recent day is first
-    entries.sort((a, b) => compareDateOnly(b.timeCreate, a.timeCreate));
+    final index = _entries.indexWhere((x) => x.id == entry.id);
+    _entries[index] = entry;
     await AppDatabase.instance.updateExternalDatabase();
 
-    // Update stats
-    _calculateWordCount();
-    _calculateEntriesByDay();
-
-    notifyListeners();
+    _refreshDerivedState();
   }
 
   Future<void> remove(Entry entry) async {
     await EntryDao.remove(entry.id!);
-    entries.removeWhere((x) => x.id == entry.id);
+    _entries.removeWhere((x) => x.id == entry.id);
     await AppDatabase.instance.updateExternalDatabase();
 
-    // Update stats
-    _calculateWordCount();
-    _calculateEntriesByDay();
-
-    notifyListeners();
+    _refreshDerivedState();
   }
 
   Future<Entry> createNewEntry(DateTime? timeCreate) async {
@@ -144,7 +117,7 @@ class EntriesProvider with ChangeNotifier {
   Future<void> deleteAll(Function(String) updateStatus) async {
     updateStatus("0%");
     var processedEntries = 0;
-    for (Entry entry in entries) {
+    for (final entry in _entries) {
       var images = EntryImagesProvider.instance.getForEntry(entry);
       for (final image in images) {
         await EntryImagesProvider.instance.remove(image);
@@ -153,7 +126,7 @@ class EntriesProvider with ChangeNotifier {
       // The provider's remove function is not used to avoid editing the entries
       // list while iterating over it.
       await EntryDao.remove(entry.id!);
-      updateStatus("${((processedEntries / entries.length) * 100).round()}%");
+      updateStatus("${((processedEntries / _entries.length) * 100).round()}%");
     }
 
     // Reload the provider since all entries have been deleted
@@ -167,28 +140,24 @@ class EntriesProvider with ChangeNotifier {
     return a.day.compareTo(b.day);
   }
 
-  /// Set the selected date and update listening widgets
-  void setSelectedDate(DateTime date) {
-    selectedDate = date;
-    notifyListeners();
-  }
+  List<Entry> getFilteredEntries({
+    GalleryFilters filters = const GalleryFilters(),
+  }) {
+    final normalizedSearchText = filters.searchText.trim().toLowerCase();
 
-  List<Entry> getFilteredEntries() {
     List<Entry> filteredEntries;
-    // Make a copy of the entries list
-    if (_searchText.isNotEmpty) {
-      filteredEntries = entries
+    if (normalizedSearchText.isNotEmpty) {
+      filteredEntries = _entries
           .where(
-            (entry) =>
-                entry.text.toLowerCase().contains(_searchText.toLowerCase()),
+            (entry) => entry.text.toLowerCase().contains(normalizedSearchText),
           )
           .toList();
     } else {
-      filteredEntries = entries.toList();
+      filteredEntries = _entries.toList();
     }
 
     // Ordering by date is the default
-    if (_orderBy == OrderBy.mood) {
+    if (filters.orderBy == OrderBy.mood) {
       filteredEntries.sort((a, b) {
         var aValue = a.mood ?? -999;
         var bValue = b.mood ?? -999;
@@ -197,7 +166,7 @@ class EntriesProvider with ChangeNotifier {
     }
 
     // Sorting is descending by default
-    if (_sortOrder == SortOrder.ascending) {
+    if (filters.sortOrder == SortOrder.ascending) {
       filteredEntries = filteredEntries.reversed.toList();
     }
 
@@ -206,7 +175,7 @@ class EntriesProvider with ChangeNotifier {
 
   void _calculateWordCount() {
     _wordCount = 0;
-    for (var entry in entries) {
+    for (final entry in _entries) {
       _wordCount += wordsCount(entry.text);
     }
   }
@@ -237,7 +206,7 @@ class EntriesProvider with ChangeNotifier {
     }
 
     // Filter entries by time range
-    var filteredEntries = entries.toList();
+    var filteredEntries = _entries.toList();
     if (filterMonthCount > 0) {
       filteredEntries = filteredEntries.where((entry) {
         DateTime now = DateTime.now();
@@ -265,7 +234,7 @@ class EntriesProvider with ChangeNotifier {
     Entry? prevEntry;
 
     bool mostRecentBadDay = true;
-    for (Entry entry in entries) {
+    for (final entry in _entries) {
       // Check for bad day
       if (entry.mood != null && mostRecentBadDay) {
         if (entry.mood! < 0) {
@@ -285,7 +254,7 @@ class EntriesProvider with ChangeNotifier {
         if (isFirstStreak &&
             TimeManager.startOfDay(DateTime.now())
                     .difference(
-                      TimeManager.startOfDay(entries.first.timeCreate),
+                      TimeManager.startOfDay(_entries.first.timeCreate),
                     )
                     .inDays <=
                 1) {
@@ -301,7 +270,7 @@ class EntriesProvider with ChangeNotifier {
       }
 
       // Set the current streak if we have reached the end and are still on the first streak
-      if (isFirstStreak && entry == entries.last) {
+      if (isFirstStreak && entry == _entries.last) {
         currentStreak = activeStreak;
       }
 
@@ -314,20 +283,20 @@ class EntriesProvider with ChangeNotifier {
   // Helper functions
 
   int getIndexOfEntry(int entryId) {
-    return entries.indexWhere((entry) => entry.id == entryId);
+    return _entries.indexWhere((entry) => entry.id == entryId);
   }
 
   Entry? getEntryForToday() {
     Entry? todayEntry;
-    if (entries.isNotEmpty && TimeManager.isToday(entries.first.timeCreate)) {
-      todayEntry = entries.first;
+    if (_entries.isNotEmpty && TimeManager.isToday(_entries.first.timeCreate)) {
+      todayEntry = _entries.first;
     }
     return todayEntry;
   }
 
   void _calculateEntriesByDay() {
     _entriesByDay = {
-      for (final e in entries)
+      for (final e in _entries)
         DateTime(e.timeCreate.year, e.timeCreate.month, e.timeCreate.day): e,
     };
   }
@@ -347,7 +316,7 @@ class EntriesProvider with ChangeNotifier {
 
   List<Entry> getLocalEntriesForDayOfYear(int month, int day) {
     final currentYear = DateTime.now().year;
-    return entries
+    return _entries
         .where(
           (entry) =>
               entry.timeCreate.month == month &&
@@ -367,5 +336,12 @@ class EntriesProvider with ChangeNotifier {
         : candidates.where((entry) => entry.id != excludeId).toList();
     final randomPool = available.isNotEmpty ? available : candidates;
     return randomPool[Random().nextInt(randomPool.length)];
+  }
+
+  void _refreshDerivedState() {
+    _entries.sort((a, b) => compareDateOnly(b.timeCreate, a.timeCreate));
+    _calculateWordCount();
+    _calculateEntriesByDay();
+    notifyListeners();
   }
 }

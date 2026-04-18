@@ -23,6 +23,7 @@ class _GalleryPageState extends State<GalleryPage>
   final TextEditingController _searchController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   late final FocusNode _focusNode = FocusNode();
+  GalleryFilters _filters = const GalleryFilters();
   double _searchElevation = 0.0;
 
   @override
@@ -31,7 +32,7 @@ class _GalleryPageState extends State<GalleryPage>
   @override
   void initState() {
     super.initState();
-    _searchController.text = EntriesProvider.instance.searchText;
+    _searchController.text = _filters.searchText;
     _scrollController.addListener(() {
       final elevation = _scrollController.position.pixels > 0 ? 1.0 : 0.0;
 
@@ -45,70 +46,92 @@ class _GalleryPageState extends State<GalleryPage>
 
   @override
   void dispose() {
+    EasyDebounce.cancel('search-debounce');
     _searchController.dispose();
     _scrollController.dispose();
     _focusNode.dispose();
     super.dispose();
   }
 
+  void _updateFilters(GalleryFilters nextFilters) {
+    if (!mounted) return;
+    setState(() {
+      _filters = nextFilters;
+    });
+  }
+
   void _showSortSelectionPopup(BuildContext context) {
-    final entriesProvider =
-        Provider.of<EntriesProvider>(context, listen: false);
     showDialog(
       context: context,
       builder: (BuildContext context) {
+        var draftFilters = _filters;
+
         return StatefulBuilder(
-            builder: (context, setState) => AlertDialog(
-                  content: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      RadioListTile<OrderBy>(
+          builder: (context, setDialogState) {
+            void updateFilters(GalleryFilters nextFilters) {
+              setDialogState(() {
+                draftFilters = nextFilters;
+              });
+              _updateFilters(nextFilters);
+            }
+
+            return AlertDialog(
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(AppLocalizations.of(context)!.sortDateTitle),
+                  const SizedBox(height: 12),
+                  SegmentedButton<OrderBy>(
+                    segments: [
+                      ButtonSegment<OrderBy>(
                         value: OrderBy.date,
-                        groupValue: entriesProvider.orderBy,
-                        onChanged: (value) => setState(() {
-                          if (value != null) {
-                            entriesProvider.orderBy = value;
-                          }
-                        }),
-                        title:
+                        label:
                             Text(AppLocalizations.of(context)!.sortDateTitle),
                       ),
-                      RadioListTile<OrderBy>(
+                      ButtonSegment<OrderBy>(
                         value: OrderBy.mood,
-                        groupValue: entriesProvider.orderBy,
-                        onChanged: (value) => setState(() {
-                          if (value != null) {
-                            entriesProvider.orderBy = value;
-                          }
-                        }),
-                        title: Text(AppLocalizations.of(context)!.tagMoodTitle),
-                      ),
-                      const Divider(),
-                      RadioListTile<SortOrder>(
-                        value: SortOrder.ascending,
-                        groupValue: entriesProvider.sortOrder,
-                        onChanged: (value) => setState(() {
-                          if (value != null) {
-                            entriesProvider.sortOrder = value;
-                          }
-                        }),
-                        title: Text(AppLocalizations.of(context)!
-                            .sortOrderAscendingTitle),
-                      ),
-                      RadioListTile<SortOrder>(
-                        value: SortOrder.descending,
-                        groupValue: entriesProvider.sortOrder,
-                        onChanged: (value) => setState(() {
-                          if (value != null) {
-                            entriesProvider.sortOrder = value;
-                          }
-                        }),
-                        title: Text(AppLocalizations.of(context)!
-                            .sortOrderDescendingTitle),
+                        label: Text(AppLocalizations.of(context)!.tagMoodTitle),
                       ),
                     ],
+                    selected: {draftFilters.orderBy},
+                    onSelectionChanged: (selection) {
+                      updateFilters(
+                        draftFilters.copyWith(orderBy: selection.first),
+                      );
+                    },
                   ),
-                ));
+                  const SizedBox(height: 16),
+                  Text(AppLocalizations.of(context)!.sortOrderDescendingTitle),
+                  const SizedBox(height: 12),
+                  SegmentedButton<SortOrder>(
+                    segments: [
+                      ButtonSegment<SortOrder>(
+                        value: SortOrder.descending,
+                        label: Text(
+                          AppLocalizations.of(context)!
+                              .sortOrderDescendingTitle,
+                        ),
+                      ),
+                      ButtonSegment<SortOrder>(
+                        value: SortOrder.ascending,
+                        label: Text(
+                          AppLocalizations.of(context)!.sortOrderAscendingTitle,
+                        ),
+                      ),
+                    ],
+                    selected: {draftFilters.sortOrder},
+                    onSelectionChanged: (selection) {
+                      updateFilters(
+                        draftFilters.copyWith(sortOrder: selection.first),
+                      );
+                    },
+                  ),
+                ],
+              ),
+            );
+          },
+        );
       },
     );
   }
@@ -120,7 +143,7 @@ class _GalleryPageState extends State<GalleryPage>
     final configProvider = Provider.of<ConfigProvider>(context);
     String viewMode = configProvider.get(ConfigKey.galleryPageViewMode);
     bool listView = viewMode == 'list';
-    var entries = entriesProvider.getFilteredEntries();
+    var entries = entriesProvider.getFilteredEntries(filters: _filters);
     return Center(
       child: Stack(alignment: Alignment.topCenter, children: [
         buildEntries(context, listView, entries),
@@ -181,14 +204,13 @@ class _GalleryPageState extends State<GalleryPage>
                             icon: Icon(Icons.close_rounded),
                             onPressed: () {
                               _searchController.clear();
-                              entriesProvider.searchText = "";
-                              setState(() {});
+                              _updateFilters(_filters.copyWith(searchText: ''));
                             },
                           )
                         : SizedBox.shrink(
                             key: ValueKey('empty')), // Empty widget
                   ),
-                  if (entriesProvider.searchText.isNotEmpty)
+                  if (_filters.searchText.isNotEmpty)
                     Padding(
                       padding: const EdgeInsets.only(right: 8.0),
                       child: Text(AppLocalizations.of(context)!
@@ -205,7 +227,7 @@ class _GalleryPageState extends State<GalleryPage>
                     Theme.of(context).colorScheme.secondaryContainer),
                 onChanged: (queryText) => EasyDebounce.debounce(
                     'search-debounce', const Duration(milliseconds: 300), () {
-                  entriesProvider.searchText = queryText;
+                  _updateFilters(_filters.copyWith(searchText: queryText));
                 }),
               ),
             ),
@@ -318,6 +340,7 @@ class _GalleryPageState extends State<GalleryPage>
                           allowSnapshotting: false,
                           builder: (context) => EntryDetailPage(
                                 filtered: true,
+                                galleryFilters: _filters,
                                 index: index,
                               )));
                     },
