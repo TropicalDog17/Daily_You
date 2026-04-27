@@ -212,10 +212,8 @@ class CompilationService {
     required String videoEncoderArgs,
     required void Function(double phaseFraction) onProgress,
   }) async {
-    final inputName =
-        (media.mediaType == 'video' || media.mediaType == 'live_photo')
-            ? media.videoPath
-            : media.imgPath;
+    final useMotionSource = media.rendersMotion;
+    final inputName = useMotionSource ? media.videoPath : media.imgPath;
     if (inputName == null) {
       throw StateError('Selected media is missing a source file path');
     }
@@ -228,7 +226,7 @@ class CompilationService {
     final baseFilter =
         'scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2,format=yuv420p';
 
-    if (media.mediaType == 'video' || media.mediaType == 'live_photo') {
+    if (useMotionSource) {
       await _runCommand(
         '-y -i ${_quote(inputPath)} -t $clipDurationSeconds '
         '-vf "$baseFilter" $videoEncoderArgs -an ${_quote(outputPath)}',

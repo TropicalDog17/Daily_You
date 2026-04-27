@@ -13,44 +13,56 @@ class BackupRestoreUtils {
   static Future<bool> backupToZip(
       BuildContext context, void Function(String) updateStatus) async {
     final l10n = AppLocalizations.of(context)!;
-    String? savePath;
-    try {
-      savePath = await FileLayer.pickDirectory();
-    } catch (e) {
-      updateStatus("$e");
-      await Future.delayed(Duration(seconds: 5));
-      return false;
-    }
-    if (savePath == null) return false;
-
     var tempDir = await getTemporaryDirectory();
 
     final exportedZipName =
         "daily_you_backup_${DateTime.now().toIso8601String().replaceAll(':', '-')}.zip";
+    final tempZipPath = join(tempDir.path, exportedZipName);
 
-    // Create archive
-    updateStatus(l10n.creatingBackupStatus("0"));
-    await ZipUtils.compress(join(tempDir.path, exportedZipName), [
-      await AppDatabase.instance.getInternalPath()
-    ], [
-      await ImageStorage.instance.getInternalFolder()
-    ], onProgress: (percent) {
-      updateStatus(l10n.creatingBackupStatus("${percent.round()}"));
-    });
+    try {
+      String? savePath;
+      if (!Platform.isIOS) {
+        savePath = await FileLayer.pickDirectory();
+        if (savePath == null) return false;
+      }
 
-    // Save archive
-    updateStatus(l10n.tranferStatus("0"));
-    await FileLayer.copyToExternalLocation(
-        join(tempDir.path, exportedZipName), savePath, exportedZipName,
-        onProgress: (percent) {
-      updateStatus(l10n.tranferStatus("${percent.round()}"));
-    });
+      // Create archive
+      updateStatus(l10n.creatingBackupStatus("0"));
+      await ZipUtils.compress(tempZipPath, [
+        await AppDatabase.instance.getInternalPath()
+      ], [
+        await ImageStorage.instance.getInternalFolder()
+      ], onProgress: (percent) {
+        updateStatus(l10n.creatingBackupStatus("${percent.round()}"));
+      });
 
-    // Delete temp files
-    updateStatus(l10n.cleanUpStatus);
-    await File(join(tempDir.path, exportedZipName)).delete();
+      // Save archive
+      updateStatus(l10n.tranferStatus("0"));
+      final saved = Platform.isIOS
+          ? await FileLayer.saveLocalFileWithPicker(
+              tempZipPath, exportedZipName)
+          : await FileLayer.copyToExternalLocation(
+              tempZipPath,
+              savePath!,
+              exportedZipName,
+              onProgress: (percent) {
+                updateStatus(l10n.tranferStatus("${percent.round()}"));
+              },
+            );
+      if (!saved) return false;
 
-    return true;
+      return true;
+    } catch (e) {
+      updateStatus("$e");
+      await Future.delayed(Duration(seconds: 5));
+      return false;
+    } finally {
+      // Temp cleanup should not mask the original backup result.
+      if (await File(tempZipPath).exists()) {
+        updateStatus(l10n.cleanUpStatus);
+        await File(tempZipPath).delete();
+      }
+    }
   }
 
   static Future<bool> restoreFromZip(

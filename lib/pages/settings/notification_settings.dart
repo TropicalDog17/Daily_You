@@ -3,6 +3,8 @@ import 'package:daily_you/config_provider.dart';
 import 'package:daily_you/notification_manager.dart';
 import 'package:daily_you/time_manager.dart';
 import 'package:daily_you/widgets/settings_icon_action.dart';
+import 'package:daily_you/widgets/settings_page_shell.dart';
+import 'package:daily_you/widgets/settings_section.dart';
 import 'package:daily_you/widgets/settings_toggle.dart';
 import 'package:flutter/material.dart';
 import 'package:daily_you/l10n/generated/app_localizations.dart';
@@ -149,31 +151,35 @@ class _NotificationSettingsState extends State<NotificationSettings> {
   @override
   Widget build(BuildContext context) {
     final configProvider = Provider.of<ConfigProvider>(context);
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(AppLocalizations.of(context)!.settingsNotificationsTitle),
-        centerTitle: true,
-      ),
-      body: ListView(
+    return SettingsPageShell(
+      title: AppLocalizations.of(context)!.settingsNotificationsTitle,
+      child: ListView(
         children: [
-          ...NotificationSettings.buildCoreReminderSettings(context),
-          if (configProvider.get(ConfigKey.dailyReminders))
-            SettingsToggle(
-                title: AppLocalizations.of(context)!
-                    .settingsAlwaysSendReminderTitle,
-                hint: AppLocalizations.of(context)!
-                    .settingsAlwaysSendReminderDescription,
-                settingsKey: ConfigKey.alwaysRemind,
-                onChanged: (value) async {
-                  await configProvider.set(ConfigKey.alwaysRemind, value);
-                }),
-          if (configProvider.get(ConfigKey.dailyReminders))
-            SettingsIconAction(
-                title: AppLocalizations.of(context)!
-                    .settingsCustomizeNotificationTitle,
-                icon: Icon(Icons.edit_notifications_rounded),
-                onPressed: () => AppSettings.openAppSettings(
-                    type: AppSettingsType.notification)),
+          SettingsSection(
+            children: [
+              ...NotificationSettings.buildCoreReminderSettings(context),
+              if (configProvider.get(ConfigKey.dailyReminders))
+                SettingsToggle(
+                  title: AppLocalizations.of(context)!
+                      .settingsAlwaysSendReminderTitle,
+                  hint: AppLocalizations.of(context)!
+                      .settingsAlwaysSendReminderDescription,
+                  settingsKey: ConfigKey.alwaysRemind,
+                  onChanged: (value) async {
+                    await configProvider.set(ConfigKey.alwaysRemind, value);
+                  },
+                ),
+              if (configProvider.get(ConfigKey.dailyReminders))
+                SettingsIconAction(
+                  title: AppLocalizations.of(context)!
+                      .settingsCustomizeNotificationTitle,
+                  icon: const Icon(Icons.edit_notifications_rounded),
+                  onPressed: () => AppSettings.openAppSettings(
+                    type: AppSettingsType.notification,
+                  ),
+                ),
+            ],
+          ),
         ],
       ),
     );

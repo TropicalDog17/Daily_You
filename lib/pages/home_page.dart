@@ -11,6 +11,7 @@ import 'package:daily_you/providers/entries_provider.dart';
 import 'package:daily_you/providers/entry_images_provider.dart';
 import 'package:daily_you/time_manager.dart';
 import 'package:daily_you/widgets/entry_calendar.dart';
+import 'package:daily_you/widgets/frosted_panel.dart';
 import 'package:daily_you/widgets/hiding_widget.dart';
 import 'package:daily_you/widgets/ios_calendar_grid.dart';
 import 'package:daily_you/widgets/large_entry_card_widget.dart';
@@ -61,9 +62,8 @@ class _HomePageState extends State<HomePage>
     bool openCamera,
   ) async {
     await Navigator.of(context).push(
-      MaterialPageRoute(
-        allowSnapshotting: false,
-        builder: (context) => AddEditEntryPage(
+      _buildRoute(
+        AddEditEntryPage(
           entry: todayEntry,
           openCamera: openCamera,
           images: todayImages,
@@ -73,12 +73,16 @@ class _HomePageState extends State<HomePage>
   }
 
   Future<void> _openCompilation() async {
-    await Navigator.of(context).push(
-      MaterialPageRoute(
-        allowSnapshotting: false,
-        builder: (context) => const CompilationPage(),
-      ),
-    );
+    await Navigator.of(context).push(_buildRoute(const CompilationPage()));
+  }
+
+  PageRoute<T> _buildRoute<T>(Widget page) {
+    return Platform.isIOS
+        ? CupertinoPageRoute(builder: (context) => page)
+        : MaterialPageRoute(
+            allowSnapshotting: false,
+            builder: (context) => page,
+          );
   }
 
   Future _checkForLaunchIntent() async {
@@ -97,7 +101,8 @@ class _HomePageState extends State<HomePage>
   Future _checkForNotificationLaunch() async {
     if (firstLoad) {
       firstLoad = false;
-      if (Platform.isAndroid || Platform.isIOS) {
+      if ((Platform.isAndroid || Platform.isIOS) &&
+          NotificationManager.instance.isInitialized) {
         var launchDetails = await NotificationManager.instance.notifications
             .getNotificationAppLaunchDetails();
 
@@ -116,9 +121,8 @@ class _HomePageState extends State<HomePage>
 
           if (!mounted) return;
           await Navigator.of(context).push(
-            MaterialPageRoute(
-              allowSnapshotting: false,
-              builder: (context) => AddEditEntryPage(
+            _buildRoute(
+              AddEditEntryPage(
                 entry: entry,
                 openCamera: false,
                 images: entryImages,
@@ -190,84 +194,97 @@ class _HomePageState extends State<HomePage>
     final colorScheme = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
     final bgColor = isDark
-        ? colorScheme.primary.withValues(alpha: 0.85)
+        ? colorScheme.primary.withValues(alpha: 0.9)
         : colorScheme.primary;
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.end,
-      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        GestureDetector(
-          onTap: _openCompilation,
-          child: Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: theme.colorScheme.secondaryContainer,
-              borderRadius: BorderRadius.circular(22),
-            ),
-            child: Icon(
-              CupertinoIcons.film_fill,
-              color: theme.colorScheme.onSecondaryContainer,
-              size: 20,
-            ),
-          ),
-        ),
-        const SizedBox(width: 10),
-        // Camera button — smaller pill
-        GestureDetector(
-          onTap: () async {
-            await addOrEditTodayEntry(todayEntry, todayImages, true);
-          },
-          child: Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: bgColor,
-              borderRadius: BorderRadius.circular(22),
-              boxShadow: [
-                BoxShadow(
-                  color: colorScheme.shadow.withValues(alpha: 0.12),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
+        FrostedPanel(
+          padding: const EdgeInsets.all(6),
+          borderRadius: BorderRadius.circular(32),
+          color: colorScheme.surface.withValues(alpha: isDark ? 0.68 : 0.78),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildIosDockButton(
+                context,
+                icon: CupertinoIcons.film_fill,
+                size: 44,
+                onPressed: _openCompilation,
+                backgroundColor: colorScheme.secondaryContainer,
+                iconColor: colorScheme.onSecondaryContainer,
+              ),
+              const SizedBox(width: 8),
+              _buildIosDockButton(
+                context,
+                icon: CupertinoIcons.camera_fill,
+                size: 44,
+                onPressed: () async {
+                  await addOrEditTodayEntry(todayEntry, todayImages, true);
+                },
+                backgroundColor: colorScheme.primary.withValues(alpha: 0.14),
+                iconColor: colorScheme.primary,
+              ),
+              const SizedBox(width: 8),
+              CupertinoButton(
+                key: const ValueKey('home-entry-button'),
+                padding: EdgeInsets.zero,
+                minimumSize: Size.zero,
+                onPressed: () async {
+                  await addOrEditTodayEntry(todayEntry, todayImages, false);
+                },
+                child: Container(
+                  width: 62,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    color: bgColor,
+                    borderRadius: BorderRadius.circular(28),
+                    boxShadow: [
+                      BoxShadow(
+                        color: colorScheme.shadow.withValues(alpha: 0.14),
+                        blurRadius: 16,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
+                  ),
+                  child: Icon(
+                    todayEntry == null
+                        ? CupertinoIcons.add
+                        : CupertinoIcons.pencil,
+                    color: colorScheme.onPrimary,
+                    size: 28,
+                  ),
                 ),
-              ],
-            ),
-            child: Icon(
-              CupertinoIcons.camera_fill,
-              color: colorScheme.onPrimary,
-              size: 20,
-            ),
-          ),
-        ),
-        const SizedBox(width: 10),
-        // Main entry button — larger pill
-        GestureDetector(
-          onTap: () async {
-            await addOrEditTodayEntry(todayEntry, todayImages, false);
-          },
-          child: Container(
-            width: 56,
-            height: 56,
-            decoration: BoxDecoration(
-              color: bgColor,
-              borderRadius: BorderRadius.circular(28),
-              boxShadow: [
-                BoxShadow(
-                  color: colorScheme.shadow.withValues(alpha: 0.15),
-                  blurRadius: 12,
-                  offset: const Offset(0, 3),
-                ),
-              ],
-            ),
-            child: Icon(
-              todayEntry == null ? CupertinoIcons.plus : CupertinoIcons.pencil,
-              color: colorScheme.onPrimary,
-              size: 26,
-            ),
+              ),
+            ],
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildIosDockButton(
+    BuildContext context, {
+    required IconData icon,
+    required double size,
+    required Future<void> Function() onPressed,
+    required Color backgroundColor,
+    required Color iconColor,
+  }) {
+    return CupertinoButton(
+      padding: EdgeInsets.zero,
+      minimumSize: Size.zero,
+      onPressed: onPressed,
+      child: Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          color: backgroundColor,
+          borderRadius: BorderRadius.circular(size / 2),
+        ),
+        child: Icon(icon, color: iconColor, size: 20),
+      ),
     );
   }
 
@@ -308,6 +325,7 @@ class _HomePageState extends State<HomePage>
             ),
           ),
         FloatingActionButton(
+          key: const ValueKey('home-entry-button'),
           heroTag: "home-entry-button",
           backgroundColor: Theme.of(context).colorScheme.primary,
           elevation: 1,
@@ -407,9 +425,8 @@ class _HomePageState extends State<HomePage>
                       child: GestureDetector(
                         onTap: () async {
                           await Navigator.of(context).push(
-                            MaterialPageRoute(
-                              allowSnapshotting: false,
-                              builder: (context) => EntryDetailPage(
+                            _buildRoute(
+                              EntryDetailPage(
                                 filtered: false,
                                 index: EntriesProvider.instance.getIndexOfEntry(
                                   flashback.entry.id!,
@@ -494,15 +511,12 @@ class _HomePageState extends State<HomePage>
       entry: rewindEntry,
       images: entryImagesProvider.getForEntryId(rewindEntry.id!),
       onOpen: () async {
-        await Navigator.of(context).push(
-          MaterialPageRoute(
-            allowSnapshotting: false,
-            builder: (context) => EntryDetailPage(
-              filtered: false,
-              index: entriesProvider.getIndexOfEntry(rewindEntry.id!),
-            ),
+        await Navigator.of(context).push(_buildRoute(
+          EntryDetailPage(
+            filtered: false,
+            index: entriesProvider.getIndexOfEntry(rewindEntry.id!),
           ),
-        );
+        ));
       },
       onShowAnother: () {
         if (rewindCandidates.isEmpty) return;
@@ -517,6 +531,28 @@ class _HomePageState extends State<HomePage>
   }
 
   Widget _buildCalendarEmptyState(BuildContext context) {
+    if (Platform.isIOS) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        child: FrostedPanel(
+          child: Row(
+            children: [
+              Icon(
+                CupertinoIcons.sparkles,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  AppLocalizations.of(context)!.homeEmptyStateMessage,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       child: Card.filled(
@@ -544,6 +580,59 @@ class _HomePageState extends State<HomePage>
     final month = DateTime.now().month;
     if (month != 1) return null;
 
+    if (Platform.isIOS) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        child: FrostedPanel(
+          color: Theme.of(context)
+              .colorScheme
+              .tertiaryContainer
+              .withValues(alpha: 0.6),
+          borderColor:
+              Theme.of(context).colorScheme.tertiary.withValues(alpha: 0.16),
+          child: CupertinoButton(
+            padding: EdgeInsets.zero,
+            onPressed: () async {
+              await Navigator.of(context)
+                  .push(_buildRoute(const YearInReviewPage()));
+            },
+            child: Row(
+              children: [
+                const Icon(CupertinoIcons.sparkles),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        AppLocalizations.of(context)!.yearInReviewBannerTitle,
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        AppLocalizations.of(context)!
+                            .yearInReviewBannerSubtitle,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant,
+                            ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Icon(
+                  CupertinoIcons.chevron_forward,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       child: Card.filled(
@@ -558,12 +647,8 @@ class _HomePageState extends State<HomePage>
               Text(AppLocalizations.of(context)!.yearInReviewBannerSubtitle),
           trailing: const Icon(Icons.chevron_right_rounded),
           onTap: () async {
-            await Navigator.of(context).push(
-              MaterialPageRoute(
-                allowSnapshotting: false,
-                builder: (context) => const YearInReviewPage(),
-              ),
-            );
+            await Navigator.of(context)
+                .push(_buildRoute(const YearInReviewPage()));
           },
         ),
       ),

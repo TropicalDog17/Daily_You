@@ -1,7 +1,10 @@
 ### Main focus
 - Develop the DailyYou in IOS for production-ready moment tracking and diary keep.
+
 ### Running the app
-- Run on real Iphone device: `flutter run -d 00008120-00080C362162601E`
+- Run dev on real iPhone: `make run-dev-iphone`
+- Run release on real iPhone: `make run-release-iphone`
+- Override the target device when needed: `make run-dev-iphone IPHONE_DEVICE_ID=<device-id>`
 
 ### Guidelines
 - Must use subagent_orchestrator skill for significant task

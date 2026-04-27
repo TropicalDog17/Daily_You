@@ -1,4 +1,8 @@
+import 'dart:io';
+
 import 'package:daily_you/config_provider.dart';
+import 'package:daily_you/widgets/adaptive_settings_row.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -19,31 +23,15 @@ class SettingsToggle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final configProvider = Provider.of<ConfigProvider>(context);
-    return Padding(
-      padding:
-          const EdgeInsets.only(top: 8.0, bottom: 8.0, left: 16.0, right: 16.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-                ),
-                if (hint != null)
-                  Text(
-                    hint!,
-                    style: TextStyle(fontSize: 14),
-                  ),
-              ],
-            ),
-          ),
-          Switch(value: configProvider.get(settingsKey), onChanged: onChanged)
-        ],
-      ),
+    final currentValue = (configProvider.get(settingsKey) as bool?) ?? false;
+
+    return AdaptiveSettingsRow(
+      title: title,
+      hint: hint,
+      trailing: Platform.isIOS
+          ? CupertinoSwitch(value: currentValue, onChanged: onChanged)
+          : Switch(value: currentValue, onChanged: onChanged),
+      onTap: () => onChanged(!currentValue),
     );
   }
 }

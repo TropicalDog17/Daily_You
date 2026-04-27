@@ -15,6 +15,7 @@ import 'package:daily_you/l10n/generated/app_localizations.dart';
 import 'package:daily_you/pages/edit_entry_page.dart';
 import 'package:daily_you/pages/image_view_page.dart';
 import 'package:daily_you/widgets/local_image_loader.dart';
+import 'package:daily_you/widgets/live_photo_widget.dart';
 import 'package:daily_you/widgets/mood_icon.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
@@ -233,58 +234,7 @@ class EntryDetails extends StatelessWidget {
                 child: SizedBox(
                   height: 220,
                   width: 220,
-                  child: images.first.mediaType == 'video'
-                      ? VideoPlayerWidget(media: images.first)
-                      : GestureDetector(
-                          onTap: () async {
-                            await Navigator.of(context).push(
-                              MaterialPageRoute(
-                                allowSnapshotting: false,
-                                fullscreenDialog: true,
-                                builder: (context) =>
-                                    ImageViewPage(images: images, index: 0),
-                              ),
-                            );
-                          },
-                          onLongPress: images.first.mediaType == 'live_photo'
-                              ? () async {
-                                  await showDialog(
-                                    context: context,
-                                    builder: (_) => Dialog(
-                                      child: Padding(
-                                        padding: const EdgeInsets.all(8),
-                                        child: VideoPlayerWidget(
-                                          media: images.first,
-                                          autoStart: true,
-                                        ),
-                                      ),
-                                    ),
-                                  );
-                                }
-                              : null,
-                          child: Card.filled(
-                            clipBehavior: Clip.antiAlias,
-                            child: Stack(
-                              fit: StackFit.expand,
-                              children: [
-                                LocalImageLoader(
-                                  imagePath: images.first.imgPath,
-                                ),
-                                if (images.first.mediaType == 'live_photo')
-                                  const Align(
-                                    alignment: Alignment.bottomRight,
-                                    child: Padding(
-                                      padding: EdgeInsets.all(8.0),
-                                      child: Icon(
-                                        Icons.motion_photos_on_rounded,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                  ),
-                              ],
-                            ),
-                          ),
-                        ),
+                  child: _buildMediaCard(context, images, images.first),
                 ),
               ),
             Card.filled(
@@ -367,6 +317,105 @@ class EntryDetails extends StatelessWidget {
     );
   }
 
+  Future<void> _openImageViewer(
+    BuildContext context,
+    List<EntryImage> images,
+    EntryImage image,
+  ) async {
+    final imageOnly = images.where((x) => !x.isVideo).toList();
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        allowSnapshotting: false,
+        fullscreenDialog: true,
+        builder: (context) => ImageViewPage(
+          images: imageOnly,
+          index: imageOnly.indexWhere((x) => x.id == image.id),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _toggleLivePhotoMode(
+    BuildContext context,
+    EntryImage image,
+  ) async {
+    if (!image.isLivePhoto || image.videoPath == null) {
+      return;
+    }
+
+    final nextMode = image.rendersMotion
+        ? EntryImage.livePhotoModeStill
+        : EntryImage.livePhotoModeLive;
+    await Provider.of<EntryImagesProvider>(context, listen: false).update(
+      image.copy(livePhotoMode: nextMode),
+    );
+  }
+
+  Widget _buildVideoThumbnail(BuildContext context, EntryImage image) {
+    return GestureDetector(
+      onTap: () async {
+        await showDialog(
+          context: context,
+          builder: (_) => Dialog(
+            child: Padding(
+              padding: const EdgeInsets.all(8),
+              child: VideoPlayerWidget(media: image),
+            ),
+          ),
+        );
+      },
+      child: Card.filled(
+        clipBehavior: Clip.antiAlias,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            LocalImageLoader(imagePath: image.imgPath),
+            const Center(
+              child: Icon(
+                Icons.play_circle_fill_rounded,
+                color: Colors.white,
+                size: 36,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStillImageCard(
+    BuildContext context,
+    List<EntryImage> images,
+    EntryImage image,
+  ) {
+    return GestureDetector(
+      onTap: () => _openImageViewer(context, images, image),
+      child: Card.filled(
+        clipBehavior: Clip.antiAlias,
+        child: LocalImageLoader(imagePath: image.imgPath),
+      ),
+    );
+  }
+
+  Widget _buildMediaCard(
+    BuildContext context,
+    List<EntryImage> images,
+    EntryImage image,
+  ) {
+    if (image.isVideo) {
+      return VideoPlayerWidget(media: image);
+    }
+    if (image.isLivePhoto) {
+      return LivePhotoWidget(
+        media: image,
+        onTap: () => _openImageViewer(context, images, image),
+        onToggle: () => _toggleLivePhotoMode(context, image),
+      );
+    }
+
+    return _buildStillImageCard(context, images, image);
+  }
+
   Widget _imagesList(BuildContext context, List<EntryImage> images) {
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -385,85 +434,13 @@ class EntryDetails extends StatelessWidget {
                   .map(
                     (image) => SizedBox(
                       width: imageSize,
-                      child: GestureDetector(
-                        onTap: () async {
-                          if (image.mediaType == 'video') {
-                            await showDialog(
-                              context: context,
-                              builder: (_) => Dialog(
-                                child: Padding(
-                                  padding: const EdgeInsets.all(8),
-                                  child: VideoPlayerWidget(media: image),
-                                ),
-                              ),
-                            );
-                          } else {
-                            final imageOnly = images
-                                .where((x) => x.mediaType != 'video')
-                                .toList();
-                            await Navigator.of(context).push(
-                              MaterialPageRoute(
-                                allowSnapshotting: false,
-                                fullscreenDialog: true,
-                                builder: (context) => ImageViewPage(
-                                  images: imageOnly,
-                                  index: imageOnly.indexWhere(
-                                    (x) => x.id == image.id,
-                                  ),
-                                ),
-                              ),
-                            );
-                          }
-                        },
-                        onLongPress: image.mediaType == 'live_photo'
-                            ? () async {
-                                await showDialog(
-                                  context: context,
-                                  builder: (_) => Dialog(
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(8),
-                                      child: VideoPlayerWidget(
-                                        media: image,
-                                        autoStart: true,
-                                      ),
-                                    ),
-                                  ),
-                                );
-                              }
-                            : null,
-                        child: Center(
-                          child: SizedBox(
-                            height: imageSize,
-                            width: imageSize,
-                            child: Card.filled(
-                              clipBehavior: Clip.antiAlias,
-                              child: Stack(
-                                fit: StackFit.expand,
-                                children: [
-                                  LocalImageLoader(imagePath: image.imgPath),
-                                  if (image.mediaType == 'video')
-                                    const Center(
-                                      child: Icon(
-                                        Icons.play_circle_fill_rounded,
-                                        color: Colors.white,
-                                        size: 36,
-                                      ),
-                                    ),
-                                  if (image.mediaType == 'live_photo')
-                                    const Align(
-                                      alignment: Alignment.bottomRight,
-                                      child: Padding(
-                                        padding: EdgeInsets.all(8.0),
-                                        child: Icon(
-                                          Icons.motion_photos_on_rounded,
-                                          color: Colors.white,
-                                        ),
-                                      ),
-                                    ),
-                                ],
-                              ),
-                            ),
-                          ),
+                      child: Center(
+                        child: SizedBox(
+                          height: imageSize,
+                          width: imageSize,
+                          child: image.isVideo
+                              ? _buildVideoThumbnail(context, image)
+                              : _buildMediaCard(context, images, image),
                         ),
                       ),
                     ),
@@ -480,84 +457,15 @@ class EntryDetails extends StatelessWidget {
             scrollDirection: Axis.horizontal,
             itemCount: images.length,
             itemBuilder: (context, index) {
-              return GestureDetector(
-                onTap: () async {
-                  if (images[index].mediaType == 'video') {
-                    await showDialog(
-                      context: context,
-                      builder: (_) => Dialog(
-                        child: Padding(
-                          padding: const EdgeInsets.all(8),
-                          child: VideoPlayerWidget(media: images[index]),
-                        ),
-                      ),
-                    );
-                  } else {
-                    final imageOnly =
-                        images.where((x) => x.mediaType != 'video').toList();
-                    await Navigator.of(context).push(
-                      MaterialPageRoute(
-                        allowSnapshotting: false,
-                        fullscreenDialog: true,
-                        builder: (context) => ImageViewPage(
-                          images: imageOnly,
-                          index: imageOnly.indexWhere(
-                            (x) => x.id == images[index].id,
-                          ),
-                        ),
-                      ),
-                    );
-                  }
-                },
-                onLongPress: images[index].mediaType == 'live_photo'
-                    ? () async {
-                        await showDialog(
-                          context: context,
-                          builder: (_) => Dialog(
-                            child: Padding(
-                              padding: const EdgeInsets.all(8),
-                              child: VideoPlayerWidget(
-                                media: images[index],
-                                autoStart: true,
-                              ),
-                            ),
-                          ),
-                        );
-                      }
-                    : null,
-                child: Center(
-                  child: SizedBox(
-                    height: imageSize,
-                    width: imageSize,
-                    child: Card.filled(
-                      clipBehavior: Clip.antiAlias,
-                      child: Stack(
-                        fit: StackFit.expand,
-                        children: [
-                          LocalImageLoader(imagePath: images[index].imgPath),
-                          if (images[index].mediaType == 'video')
-                            const Center(
-                              child: Icon(
-                                Icons.play_circle_fill_rounded,
-                                color: Colors.white,
-                                size: 36,
-                              ),
-                            ),
-                          if (images[index].mediaType == 'live_photo')
-                            const Align(
-                              alignment: Alignment.bottomRight,
-                              child: Padding(
-                                padding: EdgeInsets.all(8.0),
-                                child: Icon(
-                                  Icons.motion_photos_on_rounded,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                  ),
+              final image = images[index];
+
+              return Center(
+                child: SizedBox(
+                  height: imageSize,
+                  width: imageSize,
+                  child: image.isVideo
+                      ? _buildVideoThumbnail(context, image)
+                      : _buildMediaCard(context, images, image),
                 ),
               );
             },

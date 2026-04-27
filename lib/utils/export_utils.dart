@@ -28,16 +28,6 @@ class ExportUtils {
     final l10n = AppLocalizations.of(context)!;
     final locale = TimeManager.currentLocale(context);
 
-    String? exportFolder;
-    try {
-      exportFolder = await FileLayer.pickDirectory();
-    } catch (e) {
-      updateStatus("$e");
-      await Future.delayed(Duration(seconds: 5));
-      return false;
-    }
-    if (exportFolder == null) return false;
-
     bool success = true;
 
     var tempDir = await getTemporaryDirectory();
@@ -48,8 +38,15 @@ class ExportUtils {
     await tempExportImageFolder.create(recursive: true);
     final exportedZipName =
         "daily_you_markdown_export_${DateTime.now().toIso8601String().replaceAll(':', '-')}.zip";
+    final tempZipPath = join(tempDir.path, exportedZipName);
 
     try {
+      String? exportFolder;
+      if (!Platform.isIOS) {
+        exportFolder = await FileLayer.pickDirectory();
+        if (exportFolder == null) return false;
+      }
+
       final entries = EntriesProvider.instance.entries;
       final totalLogs = entries.length;
       int processedLogs = 0;
@@ -89,19 +86,24 @@ class ExportUtils {
       }
 
       // Zip export folder
-      await ZipUtils.compress(
-          join(tempDir.path, exportedZipName), [], [tempExportFolder.path],
+      await ZipUtils.compress(tempZipPath, [], [tempExportFolder.path],
           onProgress: (percent) {
         updateStatus("(2/2) ${percent.round()}%");
       });
 
       // Save archive
       updateStatus(l10n.tranferStatus("0"));
-      await FileLayer.copyToExternalLocation(
-          join(tempDir.path, exportedZipName), exportFolder, exportedZipName,
-          onProgress: (percent) {
-        updateStatus(l10n.tranferStatus("${percent.round()}"));
-      });
+      success = Platform.isIOS
+          ? await FileLayer.saveLocalFileWithPicker(
+              tempZipPath, exportedZipName)
+          : await FileLayer.copyToExternalLocation(
+              tempZipPath,
+              exportFolder!,
+              exportedZipName,
+              onProgress: (percent) {
+                updateStatus(l10n.tranferStatus("${percent.round()}"));
+              },
+            );
     } catch (e) {
       updateStatus("$e");
       await Future.delayed(Duration(seconds: 5));
@@ -110,7 +112,9 @@ class ExportUtils {
 
     // Delete temp files
     updateStatus(l10n.cleanUpStatus);
-    await File(join(tempDir.path, exportedZipName)).delete();
+    if (await File(tempZipPath).exists()) {
+      await File(tempZipPath).delete();
+    }
     if (await tempExportFolder.exists()) {
       await tempExportFolder.delete(recursive: true);
     }

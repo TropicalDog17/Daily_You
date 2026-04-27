@@ -2,6 +2,9 @@ import 'package:daily_you/config_provider.dart';
 import 'package:daily_you/models/template.dart';
 import 'package:daily_you/providers/templates_provider.dart';
 import 'package:daily_you/widgets/edit_template.dart';
+import 'package:daily_you/widgets/settings_page_shell.dart';
+import 'package:daily_you/widgets/settings_route.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:daily_you/l10n/generated/app_localizations.dart';
 import 'package:provider/provider.dart';
@@ -10,12 +13,12 @@ class TemplateManager extends StatelessWidget {
   const TemplateManager({super.key});
 
   void _showEditTemplatePopup(BuildContext context, Template? template) async {
-    await Navigator.of(context).push(MaterialPageRoute(
-        allowSnapshotting: false,
+    await Navigator.of(context).push(
+      settingsPageRoute(
+        builder: (context) => EditTemplate(template: template),
         fullscreenDialog: true,
-        builder: (context) => EditTemplate(
-              template: template,
-            )));
+      ),
+    );
   }
 
   Widget _buildTemplatesList(BuildContext context) {
@@ -79,19 +82,26 @@ class TemplateManager extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(AppLocalizations.of(context)!.manageTemplates),
-        actions: [
-          IconButton(
+    final addButton = Theme.of(context).platform == TargetPlatform.iOS
+        ? CupertinoButton(
+            padding: EdgeInsets.zero,
+            minimumSize: const Size(28, 28),
+            onPressed: () {
+              _showEditTemplatePopup(context, null);
+            },
+            child: const Icon(CupertinoIcons.add),
+          )
+        : IconButton(
             icon: const Icon(Icons.add_rounded),
             onPressed: () {
               _showEditTemplatePopup(context, null);
             },
-          ),
-        ],
-      ),
-      body: _buildTemplatesList(context),
+          );
+
+    return SettingsPageShell(
+      title: AppLocalizations.of(context)!.manageTemplates,
+      trailing: addButton,
+      child: _buildTemplatesList(context),
     );
   }
 }

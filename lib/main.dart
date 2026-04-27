@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:android_alarm_manager_plus/android_alarm_manager_plus.dart';
+import 'package:daily_you/app_startup_overrides.dart';
 import 'package:daily_you/config_provider.dart';
 import 'package:daily_you/custom_locale_delegates.dart';
 import 'package:daily_you/database/app_database.dart';
@@ -12,6 +13,7 @@ import 'package:daily_you/providers/entries_provider.dart';
 import 'package:daily_you/providers/entry_images_provider.dart';
 import 'package:daily_you/providers/templates_provider.dart';
 import 'package:daily_you/time_manager.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:daily_you/l10n/generated/app_localizations.dart';
 import 'package:daily_you/layouts/mobile_scaffold.dart';
@@ -90,15 +92,22 @@ void main() async {
   await themeProvider.initializeThemeFromConfig();
 
   // Get current device info
-  await DeviceInfoService().init();
+  if (!appStartupOverrides.skipDeviceInfoInit) {
+    await DeviceInfoService().init();
+  }
 
   if (Platform.isIOS) {
     tz_data.initializeTimeZones();
     tz.TZDateTime.now(tz.local);
   }
 
-  if (Platform.isAndroid || Platform.isIOS) {
-    await NotificationManager.instance.init();
+  if ((Platform.isAndroid || Platform.isIOS) &&
+      !appStartupOverrides.skipNotificationInit) {
+    final shouldInitNotifications = !Platform.isIOS ||
+        (DeviceInfoService().isPhysicalDevice ?? true);
+    if (shouldInitNotifications) {
+      await NotificationManager.instance.init();
+    }
   }
 
   if (Platform.isAndroid) {
@@ -217,20 +226,95 @@ ThemeData _buildThemeData({required ColorScheme colorScheme}) {
     displayColor: colorScheme.onSurface,
   );
 
+  final enhancedTextTheme = textTheme.copyWith(
+    headlineMedium: textTheme.headlineMedium?.copyWith(
+      fontWeight: FontWeight.w700,
+      letterSpacing: -0.9,
+    ),
+    titleLarge: textTheme.titleLarge?.copyWith(
+      fontWeight: FontWeight.w700,
+      letterSpacing: -0.35,
+    ),
+    bodyLarge: textTheme.bodyLarge?.copyWith(
+      fontSize: 16,
+      height: 1.34,
+    ),
+    labelLarge: textTheme.labelLarge?.copyWith(
+      fontWeight: FontWeight.w600,
+    ),
+  );
+
+  final cupertinoTheme = NoDefaultCupertinoThemeData(
+    brightness: colorScheme.brightness,
+    primaryColor: colorScheme.primary,
+    primaryContrastingColor: colorScheme.onPrimary,
+    scaffoldBackgroundColor: colorScheme.surface,
+    barBackgroundColor: colorScheme.surface.withValues(alpha: 0.84),
+    textTheme: CupertinoTextThemeData(
+      primaryColor: colorScheme.primary,
+      textStyle: enhancedTextTheme.bodyLarge,
+      actionTextStyle: enhancedTextTheme.bodyLarge?.copyWith(
+        color: colorScheme.primary,
+        fontWeight: FontWeight.w600,
+      ),
+      navTitleTextStyle: enhancedTextTheme.titleLarge?.copyWith(
+        color: colorScheme.onSurface,
+      ),
+      navLargeTitleTextStyle: enhancedTextTheme.headlineMedium?.copyWith(
+        color: colorScheme.onSurface,
+        fontSize: 32,
+      ),
+      navActionTextStyle: enhancedTextTheme.bodyLarge?.copyWith(
+        color: colorScheme.primary,
+        fontWeight: FontWeight.w600,
+      ),
+      tabLabelTextStyle: enhancedTextTheme.labelSmall?.copyWith(
+        fontWeight: FontWeight.w600,
+      ),
+    ),
+  );
+
   return baseTheme.copyWith(
     scaffoldBackgroundColor: colorScheme.surface,
-    textTheme: textTheme,
+    cardColor: colorScheme.surfaceContainerLow,
+    textTheme: enhancedTextTheme,
+    cupertinoOverrideTheme: cupertinoTheme,
     appBarTheme: AppBarTheme(
-      backgroundColor: colorScheme.surface,
+      backgroundColor: colorScheme.surface.withValues(alpha: 0.9),
       foregroundColor: colorScheme.onSurface,
       surfaceTintColor: Colors.transparent,
       elevation: 0,
       scrolledUnderElevation: 1,
       iconTheme: IconThemeData(color: colorScheme.onSurfaceVariant),
       actionsIconTheme: IconThemeData(color: colorScheme.onSurfaceVariant),
-      titleTextStyle: textTheme.titleLarge?.copyWith(
+      titleTextStyle: enhancedTextTheme.titleLarge?.copyWith(
         color: colorScheme.onSurface,
-        fontWeight: FontWeight.w600,
+        fontWeight: FontWeight.w700,
+      ),
+    ),
+    cardTheme: CardThemeData(
+      elevation: 0,
+      color: colorScheme.surfaceContainerLow,
+      margin: EdgeInsets.zero,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(28),
+      ),
+    ),
+    searchBarTheme: SearchBarThemeData(
+      elevation: const WidgetStatePropertyAll(0),
+      shape: WidgetStatePropertyAll(
+        RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(22),
+        ),
+      ),
+      backgroundColor: WidgetStatePropertyAll(
+        colorScheme.surfaceContainerHighest.withValues(alpha: 0.76),
+      ),
+      textStyle: WidgetStatePropertyAll(enhancedTextTheme.bodyLarge),
+      hintStyle: WidgetStatePropertyAll(
+        enhancedTextTheme.bodyLarge?.copyWith(
+          color: colorScheme.onSurfaceVariant,
+        ),
       ),
     ),
     navigationBarTheme: NavigationBarThemeData(
@@ -238,7 +322,7 @@ ThemeData _buildThemeData({required ColorScheme colorScheme}) {
       indicatorColor: colorScheme.secondaryContainer.withValues(alpha: 0.65),
       labelTextStyle: WidgetStateProperty.resolveWith((states) {
         final selected = states.contains(WidgetState.selected);
-        return textTheme.labelMedium?.copyWith(
+        return enhancedTextTheme.labelMedium?.copyWith(
           color:
               selected ? colorScheme.onSurface : colorScheme.onSurfaceVariant,
           fontWeight: selected ? FontWeight.w600 : FontWeight.w500,

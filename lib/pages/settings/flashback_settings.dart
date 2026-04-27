@@ -1,5 +1,6 @@
 import 'package:daily_you/config_provider.dart';
-import 'package:daily_you/widgets/settings_header.dart';
+import 'package:daily_you/widgets/settings_page_shell.dart';
+import 'package:daily_you/widgets/settings_section.dart';
 import 'package:daily_you/widgets/settings_toggle.dart';
 import 'package:flutter/material.dart';
 import 'package:daily_you/l10n/generated/app_localizations.dart';
@@ -21,31 +22,39 @@ class _FlashbackSettingsPageState extends State<FlashbackSettings> {
   @override
   Widget build(BuildContext context) {
     final configProvider = Provider.of<ConfigProvider>(context);
+    final l10n = AppLocalizations.of(context)!;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(AppLocalizations.of(context)!.flashbacksTitle),
-        centerTitle: true,
-      ),
-      body: ListView(
+    return SettingsPageShell(
+      title: l10n.flashbacksTitle,
+      child: ListView(
         children: [
-          SettingsToggle(
-              title: AppLocalizations.of(context)!.settingsShowFlashbacks,
-              settingsKey: ConfigKey.showFlashbacks,
-              onChanged: (value) {
-                configProvider.set(ConfigKey.showFlashbacks, value);
-              }),
-          if (configProvider.get(ConfigKey.showFlashbacks))
-            SettingsToggle(
-                title: AppLocalizations.of(context)!
-                    .settingsFlashbacksExcludeBadDays,
-                settingsKey: ConfigKey.excludeBadDaysFromFlashbacks,
+          SettingsSection(
+            children: [
+              SettingsToggle(
+                title: l10n.settingsShowFlashbacks,
+                settingsKey: ConfigKey.showFlashbacks,
                 onChanged: (value) {
-                  configProvider.set(
-                      ConfigKey.excludeBadDaysFromFlashbacks, value);
-                }),
+                  configProvider.set(ConfigKey.showFlashbacks, value);
+                },
+              ),
+              if (configProvider.get(ConfigKey.showFlashbacks))
+                SettingsToggle(
+                  title: l10n.settingsFlashbacksExcludeBadDays,
+                  settingsKey: ConfigKey.excludeBadDaysFromFlashbacks,
+                  onChanged: (value) {
+                    configProvider.set(
+                      ConfigKey.excludeBadDaysFromFlashbacks,
+                      value,
+                    );
+                  },
+                ),
+            ],
+          ),
           if (configProvider.get(ConfigKey.showFlashbacks))
-            ...buildFlashbackOptions(configProvider),
+            SettingsSection(
+              header: l10n.flashbacksTitle,
+              children: buildFlashbackOptions(configProvider),
+            ),
         ],
       ),
     );
@@ -53,15 +62,6 @@ class _FlashbackSettingsPageState extends State<FlashbackSettings> {
 
   List<Widget> buildFlashbackOptions(ConfigProvider configProvider) {
     return [
-      Padding(
-        padding: const EdgeInsets.only(left: 8.0, right: 8.0),
-        child:
-            SettingsHeader(text: AppLocalizations.of(context)!.flashbacksTitle),
-      ),
-      Padding(
-        padding: const EdgeInsets.only(left: 8.0, right: 8.0),
-        child: Divider(),
-      ),
       SettingsToggle(
           title: AppLocalizations.of(context)!
               .flashbackYear(2)

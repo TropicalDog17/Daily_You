@@ -41,7 +41,7 @@ class AppDatabase {
 
   Future<void> open() async {
     _database = await openDatabase(_internalPath!,
-        version: 4, onCreate: _createDatabase, onUpgrade: _onUpgrade);
+        version: 5, onCreate: _createDatabase, onUpgrade: _onUpgrade);
 
     await EntriesProvider.instance.load();
     await EntryImagesProvider.instance.load();
@@ -264,6 +264,7 @@ CREATE TABLE $imagesTable (
     ${EntryImageFields.entryId} INTEGER NOT NULL,
     ${EntryImageFields.imgPath} TEXT NOT NULL,
     ${EntryImageFields.mediaType} TEXT NOT NULL DEFAULT 'image',
+    ${EntryImageFields.livePhotoMode} TEXT NOT NULL DEFAULT 'live',
     ${EntryImageFields.videoPath} TEXT,
     ${EntryImageFields.imgRank} INTEGER NOT NULL,
     ${EntryImageFields.timeCreate} DATETIME NOT NULL DEFAULT (DATETIME('now')),
@@ -343,6 +344,11 @@ ALTER TABLE $imagesTable ADD COLUMN ${EntryImageFields.mediaType} TEXT NOT NULL 
 ''');
       await db.execute('''
 ALTER TABLE $imagesTable ADD COLUMN ${EntryImageFields.videoPath} TEXT;
+''');
+    }
+    if (oldVersion <= 4) {
+      await db.execute('''
+ALTER TABLE $imagesTable ADD COLUMN ${EntryImageFields.livePhotoMode} TEXT NOT NULL DEFAULT 'live';
 ''');
     }
   }

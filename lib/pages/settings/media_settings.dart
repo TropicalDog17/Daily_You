@@ -1,5 +1,11 @@
+import 'dart:io';
+
 import 'package:daily_you/config_provider.dart';
 import 'package:daily_you/l10n/generated/app_localizations.dart';
+import 'package:daily_you/widgets/settings_page_shell.dart';
+import 'package:daily_you/widgets/settings_section.dart';
+import 'package:daily_you/widgets/settings_toggle.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -18,44 +24,89 @@ class _MediaSettingsState extends State<MediaSettings> {
     final maxDuration =
         (configProvider.get(ConfigKey.maxVideoDurationSeconds) as int?) ?? 3;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.settingsMediaTitle),
-        centerTitle: true,
-      ),
-      body: ListView(
+    return SettingsPageShell(
+      title: l10n.settingsMediaTitle,
+      child: ListView(
+        physics: Platform.isIOS
+            ? const BouncingScrollPhysics(
+                parent: AlwaysScrollableScrollPhysics(),
+              )
+            : null,
         children: [
-          SwitchListTile(
-            title: Text(l10n.settingsMediaImportLivePhotoTitle),
-            subtitle: Text(
-              l10n.settingsMediaImportLivePhotoDescription,
-            ),
-            value:
-                configProvider.get(ConfigKey.importLivePhotosAsVideo) ?? false,
-            onChanged: (value) async {
-              await configProvider.set(
-                  ConfigKey.importLivePhotosAsVideo, value);
-            },
-          ),
-          ListTile(
-            title: Text(l10n.settingsMediaMaxVideoDurationTitle),
-            subtitle: Text(l10n.settingsMediaDurationSeconds(maxDuration)),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Slider(
-              min: 1,
-              max: 10,
-              divisions: 9,
-              value: maxDuration.toDouble(),
-              label: '$maxDuration s',
-              onChanged: (value) async {
-                await configProvider.set(
-                  ConfigKey.maxVideoDurationSeconds,
-                  value.round(),
-                );
-              },
-            ),
+          SettingsSection(
+            children: [
+              SettingsToggle(
+                title: l10n.settingsMediaImportLivePhotoTitle,
+                hint: l10n.settingsMediaImportLivePhotoDescription,
+                settingsKey: ConfigKey.importLivePhotosAsVideo,
+                onChanged: (value) async {
+                  await configProvider.set(
+                    ConfigKey.importLivePhotosAsVideo,
+                    value,
+                  );
+                },
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      l10n.settingsMediaMaxVideoDurationTitle,
+                      style: Platform.isIOS
+                          ? TextStyle(
+                              fontSize: 17,
+                              color: CupertinoDynamicColor.resolve(
+                                CupertinoColors.label,
+                                context,
+                              ),
+                            )
+                          : Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      l10n.settingsMediaDurationSeconds(maxDuration),
+                      style: Platform.isIOS
+                          ? TextStyle(
+                              fontSize: 13,
+                              color: CupertinoDynamicColor.resolve(
+                                CupertinoColors.secondaryLabel,
+                                context,
+                              ),
+                            )
+                          : Theme.of(context).textTheme.bodyMedium,
+                    ),
+                    const SizedBox(height: 12),
+                    Platform.isIOS
+                        ? CupertinoSlider(
+                            min: 1,
+                            max: 10,
+                            divisions: 9,
+                            value: maxDuration.toDouble(),
+                            onChanged: (value) async {
+                              await configProvider.set(
+                                ConfigKey.maxVideoDurationSeconds,
+                                value.round(),
+                              );
+                            },
+                          )
+                        : Slider(
+                            min: 1,
+                            max: 10,
+                            divisions: 9,
+                            value: maxDuration.toDouble(),
+                            label: '$maxDuration s',
+                            onChanged: (value) async {
+                              await configProvider.set(
+                                ConfigKey.maxVideoDurationSeconds,
+                                value.round(),
+                              );
+                            },
+                          ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ],
       ),

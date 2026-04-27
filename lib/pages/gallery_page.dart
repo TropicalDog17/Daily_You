@@ -1,10 +1,15 @@
+import 'dart:io';
+
 import 'package:daily_you/config_provider.dart';
 import 'package:daily_you/models/entry.dart';
 import 'package:daily_you/providers/entries_provider.dart';
 import 'package:daily_you/providers/entry_images_provider.dart';
+import 'package:daily_you/widgets/frosted_panel.dart';
 import 'package:daily_you/widgets/hiding_widget.dart';
 import 'package:daily_you/widgets/large_entry_card_widget.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:daily_you/l10n/generated/app_localizations.dart';
 import 'package:daily_you/widgets/entry_card_widget.dart';
 import 'package:daily_you/pages/entry_detail_page.dart';
@@ -61,6 +66,139 @@ class _GalleryPageState extends State<GalleryPage>
   }
 
   void _showSortSelectionPopup(BuildContext context) {
+    if (Platform.isIOS) {
+      showCupertinoModalPopup<void>(
+        context: context,
+        builder: (popupContext) {
+          var draftFilters = _filters;
+
+          return StatefulBuilder(
+            builder: (context, setModalState) {
+              void updateFilters(GalleryFilters nextFilters) {
+                setModalState(() {
+                  draftFilters = nextFilters;
+                });
+                _updateFilters(nextFilters);
+              }
+
+              return SafeArea(
+                top: false,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: FrostedPanel(
+                      borderRadius: BorderRadius.circular(28),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  AppLocalizations.of(context)!
+                                      .pageGalleryTitle,
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .titleLarge
+                                      ?.copyWith(fontWeight: FontWeight.w700),
+                                ),
+                              ),
+                              CupertinoButton(
+                                padding: EdgeInsets.zero,
+                                minimumSize: const Size(28, 28),
+                                onPressed: () {
+                                  Navigator.of(context).pop();
+                                },
+                                child: const Icon(CupertinoIcons.xmark),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          _buildIosSortSection(
+                            context,
+                            title: AppLocalizations.of(context)!.sortDateTitle,
+                            child: CupertinoSlidingSegmentedControl<OrderBy>(
+                              groupValue: draftFilters.orderBy,
+                              children: {
+                                OrderBy.date: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 8,
+                                  ),
+                                  child: Text(
+                                    AppLocalizations.of(context)!.sortDateTitle,
+                                  ),
+                                ),
+                                OrderBy.mood: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 8,
+                                  ),
+                                  child: Text(
+                                    AppLocalizations.of(context)!.tagMoodTitle,
+                                  ),
+                                ),
+                              },
+                              onValueChanged: (selection) {
+                                if (selection == null) return;
+                                updateFilters(
+                                  draftFilters.copyWith(orderBy: selection),
+                                );
+                              },
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          _buildIosSortSection(
+                            context,
+                            title: AppLocalizations.of(context)!
+                                .sortOrderDescendingTitle,
+                            child: CupertinoSlidingSegmentedControl<SortOrder>(
+                              groupValue: draftFilters.sortOrder,
+                              children: {
+                                SortOrder.descending: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 8,
+                                  ),
+                                  child: Text(
+                                    AppLocalizations.of(context)!
+                                        .sortOrderDescendingTitle,
+                                  ),
+                                ),
+                                SortOrder.ascending: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 8,
+                                  ),
+                                  child: Text(
+                                    AppLocalizations.of(context)!
+                                        .sortOrderAscendingTitle,
+                                  ),
+                                ),
+                              },
+                              onValueChanged: (selection) {
+                                if (selection == null) return;
+                                updateFilters(
+                                  draftFilters.copyWith(sortOrder: selection),
+                                );
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
+          );
+        },
+      );
+      return;
+    }
+
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -141,6 +279,7 @@ class _GalleryPageState extends State<GalleryPage>
     super.build(context);
     final entriesProvider = Provider.of<EntriesProvider>(context);
     final configProvider = Provider.of<ConfigProvider>(context);
+    final isIOS = Platform.isIOS;
     String viewMode = configProvider.get(ConfigKey.galleryPageViewMode);
     bool listView = viewMode == 'list';
     var entries = entriesProvider.getFilteredEntries(filters: _filters);
@@ -150,123 +289,288 @@ class _GalleryPageState extends State<GalleryPage>
         Column(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Padding(
-              padding:
-                  const EdgeInsets.only(top: 4, bottom: 8, left: 8, right: 8),
-              child: SearchBar(
-                focusNode: _focusNode,
-                controller: _searchController,
-                elevation: WidgetStatePropertyAll(_searchElevation),
-                leading: Padding(
-                  padding: EdgeInsets.all(8.0),
-                  child: Icon(
-                    Icons.search_rounded,
-                    color: Theme.of(context).colorScheme.secondary,
-                  ),
-                ),
-                trailing: [
-                  AnimatedSwitcher(
-                    duration: Duration(milliseconds: 300),
-                    transitionBuilder:
-                        (Widget child, Animation<double> animation) {
-                      final rotationAnimation =
-                          Tween<double>(begin: 0.0, end: 0.5).animate(
-                        CurvedAnimation(
-                            parent: animation, curve: Curves.easeOut),
-                      );
-
-                      final scaleAnimation = TweenSequence([
-                        TweenSequenceItem(
-                          tween: Tween<double>(begin: 0.0, end: 1.1)
-                              .chain(CurveTween(curve: Curves.easeOut)),
-                          weight: 50,
-                        ),
-                        TweenSequenceItem(
-                          tween: Tween<double>(begin: 1.1, end: 1.0)
-                              .chain(CurveTween(curve: Curves.easeIn)),
-                          weight: 50,
-                        ),
-                      ]).animate(animation);
-
-                      return RotationTransition(
-                        turns: rotationAnimation,
-                        child: ScaleTransition(
-                          scale: scaleAnimation,
-                          child: child,
-                        ),
-                      );
-                    },
-                    child: _searchController.text.isNotEmpty
-                        ? IconButton(
-                            visualDensity: VisualDensity(
-                                horizontal: VisualDensity.minimumDensity),
-                            key: ValueKey('clearButton'),
-                            icon: Icon(Icons.close_rounded),
-                            onPressed: () {
-                              _searchController.clear();
-                              _updateFilters(_filters.copyWith(searchText: ''));
-                            },
-                          )
-                        : SizedBox.shrink(
-                            key: ValueKey('empty')), // Empty widget
-                  ),
-                  if (_filters.searchText.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(right: 8.0),
-                      child: Text(AppLocalizations.of(context)!
-                          .logCount(entries.length)),
+            isIOS
+                ? _buildIosSearchHeader(context, entries.length)
+                : Padding(
+                    padding: const EdgeInsets.only(
+                      top: 4,
+                      bottom: 8,
+                      left: 8,
+                      right: 8,
                     ),
-                  IconButton(
-                      icon: const Icon(Icons.sort_rounded),
-                      onPressed: () => _showSortSelectionPopup(context)),
-                ],
-                hintText: AppLocalizations.of(context)!.searchLogsHint,
-                padding: WidgetStateProperty.all(
-                    const EdgeInsets.only(left: 4, right: 4)),
-                backgroundColor: WidgetStatePropertyAll(
-                    Theme.of(context).colorScheme.secondaryContainer),
-                onChanged: (queryText) => EasyDebounce.debounce(
-                    'search-debounce', const Duration(milliseconds: 300), () {
-                  _updateFilters(_filters.copyWith(searchText: queryText));
-                }),
-              ),
-            ),
-            if (entries.isNotEmpty)
-              HidingWidget(
-                scrollController: _scrollController,
-                duration: Duration(milliseconds: 200),
-                hideDirection: HideDirection.down,
-                shouldShow: () {
-                  return _scrollController.position.pixels >= 500;
-                },
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: FloatingActionButton(
-                        heroTag: "gallery-jump-to-top-button",
-                        backgroundColor:
-                            Theme.of(context).colorScheme.primaryContainer,
-                        elevation: 1,
+                    child: SearchBar(
+                      focusNode: _focusNode,
+                      controller: _searchController,
+                      elevation: WidgetStatePropertyAll(_searchElevation),
+                      leading: Padding(
+                        padding: const EdgeInsets.all(8.0),
                         child: Icon(
-                          Icons.arrow_upward_rounded,
-                          color: Theme.of(context).colorScheme.primary,
-                          size: 28,
+                          Icons.search_rounded,
+                          color: Theme.of(context).colorScheme.secondary,
                         ),
-                        onPressed: () async {
-                          _scrollController.position.animateTo(0,
-                              duration: Duration(milliseconds: 300),
-                              curve: Curves.easeOut);
-                        },
+                      ),
+                      trailing: [
+                        AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 300),
+                          transitionBuilder:
+                              (Widget child, Animation<double> animation) {
+                            final rotationAnimation =
+                                Tween<double>(begin: 0.0, end: 0.5).animate(
+                              CurvedAnimation(
+                                parent: animation,
+                                curve: Curves.easeOut,
+                              ),
+                            );
+
+                            final scaleAnimation = TweenSequence([
+                              TweenSequenceItem(
+                                tween:
+                                    Tween<double>(begin: 0.0, end: 1.1).chain(
+                                  CurveTween(curve: Curves.easeOut),
+                                ),
+                                weight: 50,
+                              ),
+                              TweenSequenceItem(
+                                tween:
+                                    Tween<double>(begin: 1.1, end: 1.0).chain(
+                                  CurveTween(curve: Curves.easeIn),
+                                ),
+                                weight: 50,
+                              ),
+                            ]).animate(animation);
+
+                            return RotationTransition(
+                              turns: rotationAnimation,
+                              child: ScaleTransition(
+                                scale: scaleAnimation,
+                                child: child,
+                              ),
+                            );
+                          },
+                          child: _searchController.text.isNotEmpty
+                              ? IconButton(
+                                  visualDensity: const VisualDensity(
+                                    horizontal: VisualDensity.minimumDensity,
+                                  ),
+                                  key: const ValueKey('clearButton'),
+                                  icon: const Icon(Icons.close_rounded),
+                                  onPressed: () {
+                                    _searchController.clear();
+                                    _updateFilters(
+                                      _filters.copyWith(searchText: ''),
+                                    );
+                                  },
+                                )
+                              : const SizedBox.shrink(
+                                  key: ValueKey('empty'),
+                                ),
+                        ),
+                        if (_filters.searchText.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(right: 8.0),
+                            child: Text(
+                              AppLocalizations.of(context)!
+                                  .logCount(entries.length),
+                            ),
+                          ),
+                        IconButton(
+                          icon: const Icon(Icons.sort_rounded),
+                          onPressed: () => _showSortSelectionPopup(context),
+                        ),
+                      ],
+                      hintText: AppLocalizations.of(context)!.searchLogsHint,
+                      padding: WidgetStateProperty.all(
+                        const EdgeInsets.only(left: 4, right: 4),
+                      ),
+                      backgroundColor: WidgetStatePropertyAll(
+                        Theme.of(context).colorScheme.secondaryContainer,
+                      ),
+                      onChanged: _onSearchChanged,
+                    ),
+                  ),
+            if (entries.isNotEmpty)
+              isIOS
+                  ? _buildIosJumpButton(context)
+                  : HidingWidget(
+                      scrollController: _scrollController,
+                      duration: const Duration(milliseconds: 200),
+                      hideDirection: HideDirection.down,
+                      shouldShow: () {
+                        return _scrollController.position.pixels >= 500;
+                      },
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: FloatingActionButton(
+                              heroTag: 'gallery-jump-to-top-button',
+                              backgroundColor: Theme.of(context)
+                                  .colorScheme
+                                  .primaryContainer,
+                              elevation: 1,
+                              onPressed: _scrollToTop,
+                              child: Icon(
+                                Icons.arrow_upward_rounded,
+                                color: Theme.of(context).colorScheme.primary,
+                                size: 28,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ],
-                ),
-              ),
           ],
         ),
       ]),
+    );
+  }
+
+  void _onSearchChanged(String queryText) {
+    EasyDebounce.debounce('search-debounce', const Duration(milliseconds: 300),
+        () {
+      _updateFilters(_filters.copyWith(searchText: queryText));
+    });
+  }
+
+  Future<void> _scrollToTop() async {
+    await _scrollController.position.animateTo(
+      0,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOut,
+    );
+  }
+
+  Widget _buildIosSearchHeader(BuildContext context, int resultsCount) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+      child: Column(
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: FrostedPanel(
+                  padding: const EdgeInsets.symmetric(horizontal: 6),
+                  borderRadius: BorderRadius.circular(24),
+                  color: colorScheme.surface.withValues(alpha: 0.74),
+                  child: CupertinoSearchTextField(
+                    controller: _searchController,
+                    focusNode: _focusNode,
+                    placeholder: AppLocalizations.of(context)!.searchLogsHint,
+                    backgroundColor: Colors.transparent,
+                    style: Theme.of(context).textTheme.bodyLarge,
+                    placeholderStyle:
+                        Theme.of(context).textTheme.bodyLarge?.copyWith(
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                    onChanged: _onSearchChanged,
+                    onSuffixTap: () {
+                      _searchController.clear();
+                      _updateFilters(_filters.copyWith(searchText: ''));
+                    },
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              FrostedPanel(
+                padding: EdgeInsets.zero,
+                borderRadius: BorderRadius.circular(22),
+                color: colorScheme.surface.withValues(alpha: 0.78),
+                child: CupertinoButton(
+                  padding: const EdgeInsets.all(12),
+                  minimumSize: Size.zero,
+                  onPressed: () => _showSortSelectionPopup(context),
+                  child: Icon(
+                    CupertinoIcons.slider_horizontal_3,
+                    color: colorScheme.primary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          if (_filters.searchText.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 10),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: FrostedPanel(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  borderRadius: BorderRadius.circular(18),
+                  color: colorScheme.primary.withValues(alpha: 0.1),
+                  borderColor: colorScheme.primary.withValues(alpha: 0.15),
+                  boxShadow: const [],
+                  child: Text(
+                    AppLocalizations.of(context)!.logCount(resultsCount),
+                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                          color: colorScheme.primary,
+                        ),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      )
+          .animate()
+          .fadeIn(duration: 280.ms)
+          .moveY(begin: -8, end: 0, duration: 280.ms),
+    );
+  }
+
+  Widget _buildIosJumpButton(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return HidingWidget(
+      scrollController: _scrollController,
+      duration: const Duration(milliseconds: 200),
+      hideDirection: HideDirection.down,
+      shouldShow: () {
+        return _scrollController.position.pixels >= 500;
+      },
+      child: Align(
+        alignment: Alignment.centerRight,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(8, 8, 12, 8),
+          child: FrostedPanel(
+            padding: EdgeInsets.zero,
+            borderRadius: BorderRadius.circular(24),
+            color: colorScheme.surface.withValues(alpha: 0.78),
+            child: CupertinoButton(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              minimumSize: Size.zero,
+              onPressed: _scrollToTop,
+              child: Icon(
+                CupertinoIcons.arrow_up,
+                color: colorScheme.primary,
+                size: 24,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildIosSortSection(
+    BuildContext context, {
+    required String title,
+    required Widget child,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+        ),
+        const SizedBox(height: 10),
+        child,
+      ],
     );
   }
 
@@ -286,41 +590,73 @@ class _GalleryPageState extends State<GalleryPage>
               key: const ValueKey('gallery-empty'),
               child: Padding(
                 padding: const EdgeInsets.all(20),
-                child: Card.filled(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.photo_library_outlined,
-                          size: 38,
-                          color: Theme.of(context).colorScheme.primary,
+                child: Platform.isIOS
+                    ? FrostedPanel(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              CupertinoIcons.photo,
+                              size: 38,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                            const SizedBox(height: 10),
+                            Text(
+                              AppLocalizations.of(context)!.noLogs,
+                              style: const TextStyle(fontSize: 17),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              'Add photos or videos to see your gallery grow.',
+                              style: TextStyle(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurfaceVariant,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
                         ),
-                        const SizedBox(height: 10),
-                        Text(
-                          AppLocalizations.of(context)!.noLogs,
-                          style: const TextStyle(fontSize: 17),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          'Add photos or videos to see your gallery grow.',
-                          style: TextStyle(
-                            color:
-                                Theme.of(context).colorScheme.onSurfaceVariant,
+                      ).animate().fadeIn(duration: 250.ms)
+                    : Card.filled(
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.photo_library_outlined,
+                                size: 38,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                              const SizedBox(height: 10),
+                              Text(
+                                AppLocalizations.of(context)!.noLogs,
+                                style: const TextStyle(fontSize: 17),
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                'Add photos or videos to see your gallery grow.',
+                                style: TextStyle(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurfaceVariant,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
                           ),
-                          textAlign: TextAlign.center,
                         ),
-                      ],
-                    ),
-                  ),
-                ),
+                      ),
               ),
             )
           : GridView.builder(
               key: ValueKey('gallery-grid-$listView'),
               controller: _scrollController,
-              padding: const EdgeInsets.only(top: 70, bottom: 70),
+              padding: EdgeInsets.only(
+                top: Platform.isIOS ? 92 : 70,
+                bottom: Platform.isIOS ? 96 : 70,
+              ),
               physics: const ScrollPhysics(),
               shrinkWrap: true,
               gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
@@ -336,13 +672,24 @@ class _GalleryPageState extends State<GalleryPage>
                   index: index,
                   child: GestureDetector(
                     onTap: () async {
-                      await Navigator.of(context).push(MaterialPageRoute(
-                          allowSnapshotting: false,
-                          builder: (context) => EntryDetailPage(
-                                filtered: true,
-                                galleryFilters: _filters,
-                                index: index,
-                              )));
+                      await Navigator.of(context).push(
+                        Platform.isIOS
+                            ? CupertinoPageRoute(
+                                builder: (context) => EntryDetailPage(
+                                  filtered: true,
+                                  galleryFilters: _filters,
+                                  index: index,
+                                ),
+                              )
+                            : MaterialPageRoute(
+                                allowSnapshotting: false,
+                                builder: (context) => EntryDetailPage(
+                                  filtered: true,
+                                  galleryFilters: _filters,
+                                  index: index,
+                                ),
+                              ),
+                      );
                     },
                     child: listView
                         ? LargeEntryCardWidget(

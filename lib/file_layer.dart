@@ -16,6 +16,20 @@ class FileLayerWriteStream {
 }
 
 class FileLayer {
+  static Future<bool> saveLocalFileWithPicker(
+      String localFile, String outputFile) async {
+    if (!Platform.isIOS) {
+      return false;
+    }
+
+    final savedFile = await FilePicker.platform.saveFile(
+      fileName: outputFile,
+      bytes: await File(localFile).readAsBytes(),
+    );
+
+    return savedFile != null && savedFile != "/";
+  }
+
   static Future<String?> pickDirectory() async {
     if (Platform.isAndroid) {
       // Android

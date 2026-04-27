@@ -1,3 +1,4 @@
+import 'package:daily_you/app_startup_overrides.dart';
 import 'package:daily_you/config_provider.dart';
 import 'package:daily_you/database/app_database.dart';
 import 'package:daily_you/database/image_storage.dart';
@@ -30,7 +31,9 @@ class _LaunchPageState extends State<LaunchPage> {
 
     final localization = AppLocalizations.of(context)!;
     _storeLocalizedNotificationStrings(localization);
-    _updateAppShortcuts(localization);
+    if (!appStartupOverrides.skipQuickActions) {
+      _updateAppShortcuts(localization);
+    }
     _checkDatabaseConnection();
   }
 

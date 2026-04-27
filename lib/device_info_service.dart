@@ -13,6 +13,7 @@ class DeviceInfoService {
   String? model;
   PackageInfo? appInfo;
   bool? supportsBiometrics;
+  bool? isPhysicalDevice;
   LaunchIntent? launchIntent;
 
   Future<void> init() async {
@@ -24,10 +25,12 @@ class DeviceInfoService {
       final androidInfo = await plugin.androidInfo;
       androidSdk = androidInfo.version.sdkInt;
       model = androidInfo.model;
+      isPhysicalDevice = androidInfo.isPhysicalDevice;
       supportsBiometrics = await auth.canCheckBiometrics;
     } else if (Platform.isIOS) {
       final iosInfo = await plugin.iosInfo;
       model = iosInfo.model;
+      isPhysicalDevice = iosInfo.isPhysicalDevice;
       supportsBiometrics = await auth.canCheckBiometrics;
     }
   }

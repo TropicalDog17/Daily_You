@@ -3,6 +3,9 @@ import 'package:daily_you/models/template.dart';
 import 'package:daily_you/providers/templates_provider.dart';
 import 'package:daily_you/widgets/settings_dropdown.dart';
 import 'package:daily_you/widgets/settings_icon_action.dart';
+import 'package:daily_you/widgets/settings_page_shell.dart';
+import 'package:daily_you/widgets/settings_route.dart';
+import 'package:daily_you/widgets/settings_section.dart';
 import 'package:daily_you/widgets/template_manager.dart';
 import 'package:flutter/material.dart';
 import 'package:daily_you/l10n/generated/app_localizations.dart';
@@ -12,10 +15,12 @@ class TemplateSettings extends StatelessWidget {
   const TemplateSettings({super.key});
 
   void _showTemplateManagementPopup(BuildContext context) async {
-    await Navigator.of(context).push(MaterialPageRoute(
-        allowSnapshotting: false,
+    await Navigator.of(context).push(
+      settingsPageRoute(
+        builder: (context) => const TemplateManager(),
         fullscreenDialog: true,
-        builder: (context) => TemplateManager()));
+      ),
+    );
   }
 
   List<DropdownMenuItem<int>> _buildDefaultTemplateDropdownItems(
@@ -43,25 +48,45 @@ class TemplateSettings extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final configProvider = Provider.of<ConfigProvider>(context);
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(AppLocalizations.of(context)!.settingsTemplatesTitle),
-        centerTitle: true,
-      ),
-      body: ListView(
+    final templatesProvider = Provider.of<TemplatesProvider>(context);
+    final l10n = AppLocalizations.of(context)!;
+
+    String templateLabel(int value) {
+      if (value == -1) {
+        return l10n.noTemplateTitle;
+      }
+
+      for (final template in templatesProvider.templates) {
+        if (template.id == value) {
+          return template.name;
+        }
+      }
+
+      return l10n.noTemplateTitle;
+    }
+
+    return SettingsPageShell(
+      title: l10n.settingsTemplatesTitle,
+      child: ListView(
         children: [
-          SettingsDropdown<int>(
-            title: AppLocalizations.of(context)!.settingsDefaultTemplate,
-            value: configProvider.get(ConfigKey.defaultTemplate),
-            options: _buildDefaultTemplateDropdownItems(context),
-            onChanged: (int? newValue) {
-              configProvider.set(ConfigKey.defaultTemplate, newValue);
-            },
+          SettingsSection(
+            children: [
+              SettingsDropdown<int>(
+                title: l10n.settingsDefaultTemplate,
+                value: configProvider.get(ConfigKey.defaultTemplate),
+                labelBuilder: templateLabel,
+                options: _buildDefaultTemplateDropdownItems(context),
+                onChanged: (int? newValue) {
+                  configProvider.set(ConfigKey.defaultTemplate, newValue);
+                },
+              ),
+              SettingsIconAction(
+                title: l10n.manageTemplates,
+                icon: const Icon(Icons.edit_document),
+                onPressed: () => _showTemplateManagementPopup(context),
+              ),
+            ],
           ),
-          SettingsIconAction(
-              title: AppLocalizations.of(context)!.manageTemplates,
-              icon: Icon(Icons.edit_document),
-              onPressed: () => _showTemplateManagementPopup(context)),
         ],
       ),
     );

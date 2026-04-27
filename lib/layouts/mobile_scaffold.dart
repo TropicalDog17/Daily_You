@@ -1,8 +1,10 @@
 import 'dart:io';
 
 import 'package:daily_you/layouts/fast_page_view_scroll_physics.dart';
+import 'package:daily_you/widgets/frosted_panel.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:daily_you/l10n/generated/app_localizations.dart';
 import 'package:daily_you/pages/statistics_page.dart';
 import 'package:daily_you/pages/gallery_page.dart';
@@ -56,6 +58,19 @@ class _MobileScaffoldState extends State<MobileScaffold> {
     );
   }
 
+  Future<void> _openSettings() async {
+    await Navigator.of(context).push(
+      Platform.isIOS
+          ? CupertinoPageRoute(
+              builder: (context) => const SettingsPage(),
+            )
+          : MaterialPageRoute(
+              allowSnapshotting: false,
+              builder: (context) => const SettingsPage(),
+            ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -81,95 +96,44 @@ class _MobileScaffoldState extends State<MobileScaffold> {
         }
         return false;
       },
-      child: Scaffold(
-        backgroundColor: theme.scaffoldBackgroundColor,
-        appBar: AppBar(
-          centerTitle: isIOS,
-          title: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 220),
-            switchInCurve: Curves.easeOutCubic,
-            switchOutCurve: Curves.easeInCubic,
-            transitionBuilder: (child, animation) {
-              return FadeTransition(
-                opacity: animation,
-                child: SlideTransition(
-                  position: Tween<Offset>(
-                    begin: const Offset(0, 0.18),
-                    end: Offset.zero,
-                  ).animate(animation),
-                  child: child,
-                ),
-              );
-            },
-            child: Text(
-              appBarsTitles[currentIndex],
-              key: ValueKey(currentIndex),
-            ),
-          ),
-          elevation: _isScrolled[currentIndex] ? 1 : 0,
-          scrolledUnderElevation: 1,
-          actions: [
-            IconButton(
-              icon: Icon(
-                isIOS ? CupertinoIcons.gear_alt_fill : Icons.settings_rounded,
-              ),
-              onPressed: () async {
-                await Navigator.of(context).push(
-                  isIOS
-                      ? CupertinoPageRoute(
-                          builder: (context) => const SettingsPage(),
-                        )
-                      : MaterialPageRoute(
-                          allowSnapshotting: false,
-                          builder: (context) => const SettingsPage(),
-                        ),
-                );
-              },
-            ),
-          ],
-        ),
-        body: PageView(
-          controller: _pageController,
-          physics: const FastPageViewScrollPhysics(),
-          onPageChanged: (index) {
-            FocusManager.instance.primaryFocus?.unfocus();
-            if (index != currentIndex) {
-              setState(() {
-                currentIndex = index;
-              });
-            }
-          },
-          children: pages,
-        ),
-        bottomNavigationBar: isIOS
-            ? CupertinoTabBar(
-                currentIndex: currentIndex,
-                backgroundColor:
-                    theme.colorScheme.surface.withValues(alpha: 0.95),
-                activeColor: theme.colorScheme.primary,
-                inactiveColor: theme.colorScheme.onSurfaceVariant,
-                border: Border(
-                  top: BorderSide(
-                    color: theme.dividerColor.withValues(alpha: 0.35),
+      child: isIOS
+          ? _buildIosScaffold(context, theme, appBarsTitles)
+          : Scaffold(
+              backgroundColor: theme.scaffoldBackgroundColor,
+              appBar: AppBar(
+                centerTitle: false,
+                title: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 220),
+                  switchInCurve: Curves.easeOutCubic,
+                  switchOutCurve: Curves.easeInCubic,
+                  transitionBuilder: (child, animation) {
+                    return FadeTransition(
+                      opacity: animation,
+                      child: SlideTransition(
+                        position: Tween<Offset>(
+                          begin: const Offset(0, 0.18),
+                          end: Offset.zero,
+                        ).animate(animation),
+                        child: child,
+                      ),
+                    );
+                  },
+                  child: Text(
+                    appBarsTitles[currentIndex],
+                    key: ValueKey(currentIndex),
                   ),
                 ),
-                onTap: _selectPage,
-                items: [
-                  BottomNavigationBarItem(
-                    icon: const Icon(CupertinoIcons.house_fill),
-                    label: AppLocalizations.of(context)!.pageHomeTitle,
-                  ),
-                  BottomNavigationBarItem(
-                    icon: const Icon(CupertinoIcons.photo_fill),
-                    label: AppLocalizations.of(context)!.pageGalleryTitle,
-                  ),
-                  BottomNavigationBarItem(
-                    icon: const Icon(CupertinoIcons.chart_bar_fill),
-                    label: AppLocalizations.of(context)!.pageStatisticsTitle,
+                elevation: _isScrolled[currentIndex] ? 1 : 0,
+                scrolledUnderElevation: 1,
+                actions: [
+                  IconButton(
+                    icon: const Icon(Icons.settings_rounded),
+                    onPressed: _openSettings,
                   ),
                 ],
-              )
-            : NavigationBar(
+              ),
+              body: _buildPageView(),
+              bottomNavigationBar: NavigationBar(
                 height: 65,
                 labelBehavior:
                     NavigationDestinationLabelBehavior.onlyShowSelected,
@@ -194,6 +158,122 @@ class _MobileScaffoldState extends State<MobileScaffold> {
                   ),
                 ],
               ),
+            ),
+    );
+  }
+
+  Widget _buildPageView() {
+    return PageView(
+      controller: _pageController,
+      physics: const FastPageViewScrollPhysics(),
+      onPageChanged: (index) {
+        FocusManager.instance.primaryFocus?.unfocus();
+        if (index != currentIndex) {
+          setState(() {
+            currentIndex = index;
+          });
+        }
+      },
+      children: pages,
+    );
+  }
+
+  Widget _buildIosScaffold(
+    BuildContext context,
+    ThemeData theme,
+    List<String> appBarsTitles,
+  ) {
+    final colorScheme = theme.colorScheme;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            colorScheme.surface,
+            colorScheme.surfaceContainerLowest.withValues(alpha: 0.98),
+          ],
+        ),
+      ),
+      child: Scaffold(
+        extendBody: true,
+        backgroundColor: Colors.transparent,
+        appBar: CupertinoNavigationBar(
+          backgroundColor: colorScheme.surface.withValues(
+            alpha: _isScrolled[currentIndex] ? 0.88 : 0.72,
+          ),
+          border: null,
+          transitionBetweenRoutes: false,
+          middle: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 220),
+            switchInCurve: Curves.easeOutCubic,
+            switchOutCurve: Curves.easeInCubic,
+            transitionBuilder: (child, animation) {
+              return FadeTransition(
+                opacity: animation,
+                child: SlideTransition(
+                  position: Tween<Offset>(
+                    begin: const Offset(0, 0.18),
+                    end: Offset.zero,
+                  ).animate(animation),
+                  child: child,
+                ),
+              );
+            },
+            child: Text(
+              appBarsTitles[currentIndex],
+              key: ValueKey(currentIndex),
+            ),
+          ),
+          trailing: CupertinoButton(
+            padding: EdgeInsets.zero,
+            minimumSize: const Size(28, 28),
+            onPressed: _openSettings,
+            child: Icon(
+              CupertinoIcons.gear_alt_fill,
+              color: colorScheme.primary,
+              size: 22,
+            ),
+          ),
+        ),
+        body: _buildPageView(),
+        bottomNavigationBar: SafeArea(
+          top: false,
+          minimum: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+          child: FrostedPanel(
+            padding: EdgeInsets.zero,
+            borderRadius: BorderRadius.circular(30),
+            color: colorScheme.surface.withValues(alpha: 0.72),
+            child: CupertinoTabBar(
+              currentIndex: currentIndex,
+              backgroundColor: Colors.transparent,
+              activeColor: colorScheme.primary,
+              inactiveColor: colorScheme.onSurfaceVariant,
+              border: const Border(
+                top: BorderSide(color: Colors.transparent),
+              ),
+              onTap: _selectPage,
+              items: [
+                BottomNavigationBarItem(
+                  icon: const Icon(CupertinoIcons.house_fill),
+                  label: AppLocalizations.of(context)!.pageHomeTitle,
+                ),
+                BottomNavigationBarItem(
+                  icon: const Icon(CupertinoIcons.photo_fill),
+                  label: AppLocalizations.of(context)!.pageGalleryTitle,
+                ),
+                BottomNavigationBarItem(
+                  icon: const Icon(CupertinoIcons.chart_bar_fill),
+                  label: AppLocalizations.of(context)!.pageStatisticsTitle,
+                ),
+              ],
+            ),
+          )
+              .animate()
+              .fadeIn(duration: 360.ms)
+              .moveY(begin: 12, end: 0, duration: 360.ms),
+        ),
       ),
     );
   }

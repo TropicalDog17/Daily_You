@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:daily_you/config_provider.dart';
 import 'package:daily_you/models/entry.dart';
 import 'package:daily_you/models/image.dart';
@@ -8,6 +10,7 @@ import 'package:daily_you/providers/entry_images_provider.dart';
 import 'package:daily_you/time_manager.dart';
 import 'package:daily_you/widgets/local_image_loader.dart';
 import 'package:daily_you/widgets/mood_icon.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -62,10 +65,16 @@ class IosDayCell extends StatelessWidget {
 
     Future<void> handleTap() async {
       final entriesProvider = context.read<EntriesProvider>();
+      PageRoute<T> buildRoute<T>(Widget page) {
+        return Platform.isIOS
+            ? CupertinoPageRoute(builder: (context) => page)
+            : MaterialPageRoute(builder: (context) => page);
+      }
+
       if (entry != null) {
         await Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (context) => EntryDetailPage(
+          buildRoute(
+            EntryDetailPage(
               filtered: false,
               index: entriesProvider.getIndexOfEntry(entry.id!),
             ),
@@ -75,8 +84,8 @@ class IosDayCell extends StatelessWidget {
       }
 
       await Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (context) => AddEditEntryPage(
+        buildRoute(
+          AddEditEntryPage(
             overrideCreateDate: TimeManager.currentTimeOnDifferentDate(date)
                 .copyWith(isUtc: false),
           ),

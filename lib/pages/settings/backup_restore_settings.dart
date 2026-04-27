@@ -2,6 +2,8 @@ import 'package:daily_you/backup_restore_utils.dart';
 import 'package:daily_you/import_utils.dart';
 import 'package:daily_you/utils/export_utils.dart';
 import 'package:daily_you/widgets/settings_icon_action.dart';
+import 'package:daily_you/widgets/settings_page_shell.dart';
+import 'package:daily_you/widgets/settings_section.dart';
 import 'package:flutter/material.dart';
 import 'package:daily_you/l10n/generated/app_localizations.dart';
 
@@ -159,14 +161,17 @@ class _BackupRestoreSettingsState extends State<BackupRestoreSettings> {
 
       BackupRestoreUtils.showLoadingStatus(context, statusNotifier);
 
-      if (chosenFormat == ExportFormat.markdown) {
-        await ExportUtils.exportToMarkdown(context, (status) {
-          statusNotifier.value = status;
-        });
+      try {
+        if (chosenFormat == ExportFormat.markdown) {
+          await ExportUtils.exportToMarkdown(context, (status) {
+            statusNotifier.value = status;
+          });
+        }
+      } finally {
+        if (mounted) {
+          Navigator.of(context).pop();
+        }
       }
-
-      if (!mounted) return;
-      Navigator.of(context).pop();
     }
   }
 
@@ -175,12 +180,18 @@ class _BackupRestoreSettingsState extends State<BackupRestoreSettings> {
 
     BackupRestoreUtils.showLoadingStatus(context, statusNotifier);
 
-    bool success = await BackupRestoreUtils.backupToZip(context, (status) {
-      statusNotifier.value = status;
-    });
+    bool success = false;
+    try {
+      success = await BackupRestoreUtils.backupToZip(context, (status) {
+        statusNotifier.value = status;
+      });
+    } finally {
+      if (context.mounted) {
+        Navigator.of(context).pop();
+      }
+    }
 
     if (!context.mounted) return;
-    Navigator.of(context).pop();
 
     if (!success) {
       await showDialog(
@@ -272,42 +283,48 @@ class _BackupRestoreSettingsState extends State<BackupRestoreSettings> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(AppLocalizations.of(context)!.settingsBackupRestoreTitle),
-        centerTitle: true,
-      ),
-      body: ListView(
+    final l10n = AppLocalizations.of(context)!;
+
+    return SettingsPageShell(
+      title: l10n.settingsBackupRestoreTitle,
+      child: ListView(
         children: [
-          SettingsIconAction(
-              title: AppLocalizations.of(context)!.settingsBackup,
-              icon: Icon(Icons.backup_rounded),
-              onPressed: () async {
-                await _backupData(context);
-              }),
-          SettingsIconAction(
-              title: AppLocalizations.of(context)!.settingsRestore,
-              icon: Icon(Icons.restore_rounded),
-              onPressed: () async {
-                await _showRestoreWarning();
-              }),
-          Padding(
-            padding: const EdgeInsets.only(left: 8.0, right: 8.0),
-            child: Divider(),
+          SettingsSection(
+            children: [
+              SettingsIconAction(
+                title: l10n.settingsBackup,
+                icon: const Icon(Icons.backup_rounded),
+                onPressed: () async {
+                  await _backupData(context);
+                },
+              ),
+              SettingsIconAction(
+                title: l10n.settingsRestore,
+                icon: const Icon(Icons.restore_rounded),
+                onPressed: () async {
+                  await _showRestoreWarning();
+                },
+              ),
+            ],
           ),
-          SettingsIconAction(
-              title: AppLocalizations.of(context)!.settingsImportFromAnotherApp,
-              icon: Icon(Icons.download_rounded),
-              onPressed: () async {
-                await _showImportSelectionPopup();
-              }),
-          SettingsIconAction(
-              title:
-                  AppLocalizations.of(context)!.settingsExportToAnotherFormat,
-              icon: Icon(Icons.upload_rounded),
-              onPressed: () async {
-                await _showExportSelectionPopup();
-              }),
+          SettingsSection(
+            children: [
+              SettingsIconAction(
+                title: l10n.settingsImportFromAnotherApp,
+                icon: const Icon(Icons.download_rounded),
+                onPressed: () async {
+                  await _showImportSelectionPopup();
+                },
+              ),
+              SettingsIconAction(
+                title: l10n.settingsExportToAnotherFormat,
+                icon: const Icon(Icons.upload_rounded),
+                onPressed: () async {
+                  await _showExportSelectionPopup();
+                },
+              ),
+            ],
+          ),
         ],
       ),
     );

@@ -13,6 +13,8 @@ class NotificationManager {
 
   bool justLaunched = true;
 
+  bool get isInitialized => _notifications != null;
+
   FlutterLocalNotificationsPlugin get notifications {
     return _notifications!;
   }
@@ -36,13 +38,21 @@ class NotificationManager {
     await _notifications!.initialize(
       const InitializationSettings(
         android: AndroidInitializationSettings('@drawable/ic_notification'),
-        iOS: DarwinInitializationSettings(),
+        iOS: DarwinInitializationSettings(
+          requestAlertPermission: false,
+          requestBadgePermission: false,
+          requestSoundPermission: false,
+        ),
         linux: LinuxInitializationSettings(defaultActionName: 'Log Today'),
       ),
     );
   }
 
   Future<bool> hasNotificationPermission() async {
+    if (!isInitialized) {
+      await init();
+    }
+
     if (Platform.isAndroid) {
       var hasPermissions = await _notifications!
           .resolvePlatformSpecificImplementation<
@@ -86,6 +96,10 @@ class NotificationManager {
   }
 
   Future<void> dismissReminderNotification() async {
+    if (!isInitialized) {
+      return;
+    }
+
     var activeNotifications = await NotificationManager.instance.notifications
         .getActiveNotifications();
     for (var notif in activeNotifications) {
@@ -96,6 +110,10 @@ class NotificationManager {
   }
 
   Future<void> stopDailyReminders() async {
+    if (!isInitialized) {
+      return;
+    }
+
     if (Platform.isAndroid) {
       await AndroidAlarmManager.cancel(0);
     } else if (Platform.isIOS) {
@@ -105,6 +123,10 @@ class NotificationManager {
   }
 
   Future<void> startScheduledDailyReminders() async {
+    if (!isInitialized) {
+      return;
+    }
+
     if (Platform.isAndroid) {
       setAlarm(firstSet: true);
     } else if (Platform.isIOS) {
@@ -114,7 +136,7 @@ class NotificationManager {
   }
 
   Future<void> scheduleIOSNotification(DateTime scheduledTime) async {
-    if (!Platform.isIOS) {
+    if (!Platform.isIOS || !isInitialized) {
       return;
     }
     await _scheduleIOSNotification(scheduledTime);

@@ -2,6 +2,8 @@ import 'package:daily_you/config_provider.dart';
 import 'package:daily_you/device_info_service.dart';
 import 'package:daily_you/widgets/auth_popup.dart';
 import 'package:daily_you/widgets/settings_icon_action.dart';
+import 'package:daily_you/widgets/settings_page_shell.dart';
+import 'package:daily_you/widgets/settings_section.dart';
 import 'package:daily_you/widgets/settings_toggle.dart';
 import 'package:flutter/material.dart';
 import 'package:daily_you/l10n/generated/app_localizations.dart';
@@ -26,111 +28,112 @@ class SecuritySettingsPageState extends State<SecuritySettings> {
   Widget build(BuildContext context) {
     final configProvider = Provider.of<ConfigProvider>(context);
     final LocalAuthentication auth = LocalAuthentication();
+    final l10n = AppLocalizations.of(context)!;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(AppLocalizations.of(context)!.settingsSecurityTitle),
-        centerTitle: true,
-      ),
-      body: ListView(
+    return SettingsPageShell(
+      title: l10n.settingsSecurityTitle,
+      child: ListView(
         children: [
-          SettingsToggle(
-              title:
-                  AppLocalizations.of(context)!.settingsSecurityRequirePassword,
-              settingsKey: ConfigKey.requirePassword,
-              onChanged: (value) async {
-                if (!configProvider.get(ConfigKey.requirePassword)) {
-                  // Set a password
-                  bool setPassword = false;
-                  await showDialog(
-                      context: context,
-                      builder: (context) => AuthPopup(
-                            mode: AuthPopupMode.setPassword,
-                            title: AppLocalizations.of(context)!
-                                .settingsSecuritySetPassword,
-                            showBiometrics: false,
-                            dismissable: true,
-                            onSuccess: () {
-                              setPassword = true;
-                            },
-                          ));
-                  await configProvider.set(
-                      ConfigKey.requirePassword, setPassword);
-                } else {
-                  // Disable password
-                  await showDialog(
-                      context: context,
-                      builder: (context) => AuthPopup(
-                            mode: AuthPopupMode.unlock,
-                            title: AppLocalizations.of(context)!
-                                .settingsSecurityEnterPassword,
-                            showBiometrics: false,
-                            dismissable: true,
-                            onSuccess: () {
-                              configProvider.set(
-                                  ConfigKey.requirePassword, false);
-                            },
-                          ));
-                }
-              }),
-          if (configProvider.get(ConfigKey.requirePassword))
-            SettingsIconAction(
-                title: AppLocalizations.of(context)!
-                    .settingsSecurityChangePassword,
-                icon: Icon(Icons.edit_rounded),
-                onPressed: () async {
-                  await showDialog(
-                      context: context,
-                      builder: (context) => AuthPopup(
-                            mode: AuthPopupMode.changePassword,
-                            title: AppLocalizations.of(context)!
-                                .settingsSecurityChangePassword,
-                            showBiometrics: false,
-                            dismissable: true,
-                            onSuccess: () {},
-                          ));
-                }),
-          if (configProvider.get(ConfigKey.requirePassword) &&
-              (DeviceInfoService().supportsBiometrics ?? false))
-            SettingsToggle(
-                title: AppLocalizations.of(context)!
-                    .settingsSecurityBiometricUnlock,
-                settingsKey: ConfigKey.biometricUnlock,
+          SettingsSection(
+            children: [
+              SettingsToggle(
+                title: l10n.settingsSecurityRequirePassword,
+                settingsKey: ConfigKey.requirePassword,
                 onChanged: (value) async {
-                  await showDialog(
+                  if (!configProvider.get(ConfigKey.requirePassword)) {
+                    bool setPassword = false;
+                    await showDialog(
                       context: context,
                       builder: (context) => AuthPopup(
-                            mode: AuthPopupMode.unlock,
-                            title: AppLocalizations.of(context)!
-                                .settingsSecurityEnterPassword,
-                            showBiometrics: false,
-                            dismissable: true,
-                            onSuccess: () async {
-                              bool success = true;
-                              // Only require biometric authentication when enabling biometric unlock
-                              if (value == true) {
-                                try {
-                                  final bool didAuthenticate =
-                                      await auth.authenticate(
-                                          options: AuthenticationOptions(
-                                              stickyAuth: false,
-                                              biometricOnly: true),
-                                          localizedReason:
-                                              AppLocalizations.of(context)!
-                                                  .unlockAppPrompt);
-                                  success = didAuthenticate;
-                                } on PlatformException {
-                                  success = false;
-                                }
-                              }
+                        mode: AuthPopupMode.setPassword,
+                        title: l10n.settingsSecuritySetPassword,
+                        showBiometrics: false,
+                        dismissable: true,
+                        onSuccess: () {
+                          setPassword = true;
+                        },
+                      ),
+                    );
+                    await configProvider.set(
+                      ConfigKey.requirePassword,
+                      setPassword,
+                    );
+                  } else {
+                    await showDialog(
+                      context: context,
+                      builder: (context) => AuthPopup(
+                        mode: AuthPopupMode.unlock,
+                        title: l10n.settingsSecurityEnterPassword,
+                        showBiometrics: false,
+                        dismissable: true,
+                        onSuccess: () {
+                          configProvider.set(ConfigKey.requirePassword, false);
+                        },
+                      ),
+                    );
+                  }
+                },
+              ),
+              if (configProvider.get(ConfigKey.requirePassword))
+                SettingsIconAction(
+                  title: l10n.settingsSecurityChangePassword,
+                  icon: const Icon(Icons.edit_rounded),
+                  onPressed: () async {
+                    await showDialog(
+                      context: context,
+                      builder: (context) => AuthPopup(
+                        mode: AuthPopupMode.changePassword,
+                        title: l10n.settingsSecurityChangePassword,
+                        showBiometrics: false,
+                        dismissable: true,
+                        onSuccess: () {},
+                      ),
+                    );
+                  },
+                ),
+              if (configProvider.get(ConfigKey.requirePassword) &&
+                  (DeviceInfoService().supportsBiometrics ?? false))
+                SettingsToggle(
+                  title: l10n.settingsSecurityBiometricUnlock,
+                  settingsKey: ConfigKey.biometricUnlock,
+                  onChanged: (value) async {
+                    await showDialog(
+                      context: context,
+                      builder: (context) => AuthPopup(
+                        mode: AuthPopupMode.unlock,
+                        title: l10n.settingsSecurityEnterPassword,
+                        showBiometrics: false,
+                        dismissable: true,
+                        onSuccess: () async {
+                          var success = true;
+                          if (value == true) {
+                            try {
+                              final didAuthenticate = await auth.authenticate(
+                                options: const AuthenticationOptions(
+                                  stickyAuth: false,
+                                  biometricOnly: true,
+                                ),
+                                localizedReason: l10n.unlockAppPrompt,
+                              );
+                              success = didAuthenticate;
+                            } on PlatformException {
+                              success = false;
+                            }
+                          }
 
-                              if (success) {
-                                configProvider.set(
-                                    ConfigKey.biometricUnlock, value);
-                              }
-                            },
-                          ));
-                }),
+                          if (success) {
+                            configProvider.set(
+                              ConfigKey.biometricUnlock,
+                              value,
+                            );
+                          }
+                        },
+                      ),
+                    );
+                  },
+                ),
+            ],
+          ),
         ],
       ),
     );

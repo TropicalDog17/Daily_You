@@ -1,11 +1,15 @@
+import 'dart:io';
+
 import 'package:daily_you/models/entry.dart';
 import 'package:daily_you/pages/year_in_review_page.dart';
 import 'package:daily_you/providers/entries_provider.dart';
+import 'package:daily_you/widgets/frosted_panel.dart';
 import 'package:daily_you/widgets/mood_by_day_chart.dart';
 import 'package:daily_you/widgets/mood_by_month_chart.dart';
 import 'package:daily_you/widgets/mood_totals_chart.dart';
 import 'package:daily_you/widgets/stat_range_selector.dart';
 import 'package:daily_you/widgets/streak_card.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:daily_you/l10n/generated/app_localizations.dart';
 import 'package:intl/intl.dart';
@@ -22,6 +26,15 @@ class _StatsPageState extends State<StatsPage>
     with AutomaticKeepAliveClientMixin {
   StatsRange statsRange = StatsRange.month;
   List<Entry> entriesInRange = List.empty();
+
+  PageRoute<T> _buildRoute<T>(Widget page) {
+    return Platform.isIOS
+        ? CupertinoPageRoute(builder: (context) => page)
+        : MaterialPageRoute(
+            allowSnapshotting: false,
+            builder: (context) => page,
+          );
+  }
 
   @override
   bool get wantKeepAlive => true;
@@ -66,37 +79,93 @@ class _StatsPageState extends State<StatsPage>
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 8),
-          child: Card.filled(
-            child: ListTile(
-              leading: const Icon(Icons.auto_awesome_motion_rounded),
-              title: Text(AppLocalizations.of(context)!.yearInReviewTitle),
-              subtitle:
-                  Text(AppLocalizations.of(context)!.yearInReviewCardSubtitle),
-              trailing: const Icon(Icons.chevron_right_rounded),
-              onTap: () async {
-                await Navigator.of(context).push(
-                  MaterialPageRoute(
-                    allowSnapshotting: false,
-                    builder: (context) => const YearInReviewPage(),
+          child: Platform.isIOS
+              ? FrostedPanel(
+                  child: CupertinoButton(
+                    padding: EdgeInsets.zero,
+                    onPressed: () async {
+                      await Navigator.of(context)
+                          .push(_buildRoute(const YearInReviewPage()));
+                    },
+                    child: Row(
+                      children: [
+                        Icon(
+                          CupertinoIcons.sparkles,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                AppLocalizations.of(context)!.yearInReviewTitle,
+                                style: Theme.of(context).textTheme.titleMedium,
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                AppLocalizations.of(context)!
+                                    .yearInReviewCardSubtitle,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium
+                                    ?.copyWith(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurfaceVariant,
+                                    ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Icon(
+                          CupertinoIcons.chevron_forward,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ],
+                    ),
                   ),
-                );
-              },
-            ),
-          ),
+                )
+              : Card.filled(
+                  child: ListTile(
+                    leading: const Icon(Icons.auto_awesome_motion_rounded),
+                    title:
+                        Text(AppLocalizations.of(context)!.yearInReviewTitle),
+                    subtitle: Text(
+                      AppLocalizations.of(context)!.yearInReviewCardSubtitle,
+                    ),
+                    trailing: const Icon(Icons.chevron_right_rounded),
+                    onTap: () async {
+                      await Navigator.of(context)
+                          .push(_buildRoute(const YearInReviewPage()));
+                    },
+                  ),
+                ),
         ),
         if (uniqueDays < 7)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: Card.filled(
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Text(
-                  AppLocalizations.of(context)!.statsUnlockAfterWeek,
-                  style: TextStyle(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant),
-                ),
-              ),
-            ),
+            child: Platform.isIOS
+                ? FrostedPanel(
+                    child: Text(
+                      AppLocalizations.of(context)!.statsUnlockAfterWeek,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  )
+                : Card.filled(
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Text(
+                        AppLocalizations.of(context)!.statsUnlockAfterWeek,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
+                  ),
           ),
         const MoodByMonthChart(),
         Padding(
@@ -137,14 +206,31 @@ class _StatsPageState extends State<StatsPage>
         Padding(
           padding: const EdgeInsets.fromLTRB(8, 12, 8, 4),
           child: Center(
-            child: StatsRangeSelector(
-              statsRange: statsRange,
-              onSelectionChanged: (newSelection) {
-                setState(() {
-                  statsRange = newSelection;
-                });
-              },
-            ),
+            child: Platform.isIOS
+                ? FrostedPanel(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 8,
+                    ),
+                    borderRadius: BorderRadius.circular(22),
+                    boxShadow: const [],
+                    child: StatsRangeSelector(
+                      statsRange: statsRange,
+                      onSelectionChanged: (newSelection) {
+                        setState(() {
+                          statsRange = newSelection;
+                        });
+                      },
+                    ),
+                  )
+                : StatsRangeSelector(
+                    statsRange: statsRange,
+                    onSelectionChanged: (newSelection) {
+                      setState(() {
+                        statsRange = newSelection;
+                      });
+                    },
+                  ),
           ),
         ),
         _sectionTitle(

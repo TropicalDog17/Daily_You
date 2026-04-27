@@ -287,12 +287,39 @@ class _CompilationPageState extends State<CompilationPage> {
                               fit: StackFit.expand,
                               children: [
                                 LocalImageLoader(imagePath: media.imgPath),
-                                if (media.mediaType != 'image')
+                                if (media.isVideo)
                                   const Align(
                                     alignment: Alignment.center,
                                     child: Icon(
                                       Icons.play_circle_fill_rounded,
                                       color: Colors.white,
+                                    ),
+                                  ),
+                                if (media.isLivePhoto)
+                                  Align(
+                                    alignment: Alignment.bottomRight,
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(4),
+                                      child: DecoratedBox(
+                                        decoration: BoxDecoration(
+                                          color: Colors.black.withValues(
+                                            alpha: 0.45,
+                                          ),
+                                          borderRadius:
+                                              BorderRadius.circular(8),
+                                        ),
+                                        child: Padding(
+                                          padding: const EdgeInsets.all(4),
+                                          child: Icon(
+                                            media.rendersMotion
+                                                ? Icons.motion_photos_on_rounded
+                                                : Icons
+                                                    .motion_photos_off_rounded,
+                                            color: Colors.white,
+                                            size: 18,
+                                          ),
+                                        ),
+                                      ),
                                     ),
                                   ),
                               ],
